@@ -3233,16 +3233,18 @@ function doTransition(nextDim, label) {
     state.worldIndex=nextDim;
     state.dimensionCount++;
     if (isFirstVisit) state.worldsVisited.push(nextDim);
-    // Determine goal reset behaviour
+    // Always reset lightOn on every visit — world starts dark/foggy each time
+    // goalsComplete only resets for permanent worlds (fog worlds stay clear once solved)
     const nextGoal = nextWorld.proceduralGoal || WORLD_GOALS[nextWorld.id] || null;
     if (nextGoal) {
+      delete state.lightOn[nextWorld.id]; // always reset toggle — light starts OFF
       if (nextGoal.permanent) {
-        delete state.goalsComplete[nextWorld.id];
-        delete state.lightOn[nextWorld.id]; // reset toggle each visit
+        delete state.goalsComplete[nextWorld.id]; // darkness resets every visit
       } else if (isFirstVisit) {
-        delete state.goalsComplete[nextWorld.id];
-        delete state.lightOn[nextWorld.id];
+        delete state.goalsComplete[nextWorld.id]; // fog only resets on first visit
       }
+      // On return visits to fog worlds: goalsComplete stays set (fog stays clear)
+      // but lightOn is reset so the bag shows "Turn On" correctly
     }
     generateWorld(nextWorld);
     updateHeader(); renderInventory(); renderCrafting(); renderCodex(); renderLegendary(); scheduleSave();
