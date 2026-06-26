@@ -425,137 +425,191 @@ const RECIPES = [
 ];
 
 // ═══════════════════════════════════════════════════════
-// LEGENDARY RECIPES — rare items needing resources from
-// multiple worlds. Each grants a special visual aura/effect
-// on the character when equipped.
+// LEGENDARY RECIPES — world-specific rare/epic/legendary
+// items. Each world has exactly 1 Rare, 1 Epic, 1 Legendary.
+// All use only resources from that world.
 // ═══════════════════════════════════════════════════════
 const LEGENDARY_RECIPES = [
-  {
-    id:'leg1',
-    name:'Crown of All Worlds',
-    icon:'🌐',
-    tier:'Legendary',
-    tierColor:'#ffd700',
-    desc:'A crown forged from the essence of every dimension. Radiates a golden aurora that shifts through all world colours.',
-    aura:'rainbow',
-    ingredients:{
-      flower:5, honey:3,        // Meadow
-      crystal_blue:4, stardust:3, // Crystal
-      pearl:3, coral:3,         // Tropics
-      amber_gem:3, red_leaf:4,  // Autumn
-      rainbow_shard:4, sunstone:3, // Sky
-      magma_gem:3, obsidian:2,  // Volcano
-      ice_crystal:3, aurora_dust:4, // Tundra
-      spore_cap:3, glow_filament:3, // Mushroom
-    },
-    result:{id:'crown_all_worlds', name:'Crown of All Worlds', icon:'🌐'},
-    category:'legendary',
-  },
-  {
-    id:'leg2',
-    name:'Dimensional Staff',
-    icon:'🔱',
-    tier:'Legendary',
-    tierColor:'#ffd700',
-    desc:'A staff crackling with portal energy. Leaves a shimmering trail of sparks wherever you walk.',
-    aura:'sparks',
-    ingredients:{
-      stardust:5, glowstone:4,  // Crystal
-      rainbow_shard:5, wind_crystal:4, // Sky
-      magma_gem:4, lava_pearl:3, // Volcano
-      aurora_dust:5, ice_crystal:4, // Tundra
-      glow_filament:4, fairy_ring:3, // Mushroom
-    },
-    result:{id:'dimensional_staff', name:'Dimensional Staff', icon:'🔱'},
-    category:'legendary',
-  },
-  {
-    id:'leg3',
-    name:'Nature\'s Heart',
-    icon:'💚',
-    tier:'Epic',
-    tierColor:'#4ade80',
-    desc:'A living gem grown from the natural worlds. Pulses with a soft green glow.',
+
+  // ── SUNLIT MEADOW ──────────────────────────────────
+  { id:'m_r', worldId:'meadow', tier:'Rare',      tierColor:'#a78bfa',
+    name:'Honey Lantern',      icon:'🏮',
+    desc:'A warm lantern dripping with wild honey. Hums softly and glows amber.',
     aura:'nature',
-    ingredients:{
-      flower:8, mushroom:6, berry:5, honey:5, grass:6, // Meadow
-      red_leaf:6, acorn:5, foxglove:4,                 // Autumn
-      coconut:4, seaweed:4, coral:4,                   // Tropics
-      frost_moss:4, frozen_flower:4,                   // Tundra
-    },
-    result:{id:'natures_heart', name:"Nature's Heart", icon:'💚'},
-    category:'legendary',
-  },
-  {
-    id:'leg4',
-    name:'Void Crystal',
-    icon:'🖤',
-    tier:'Epic',
-    tierColor:'#4ade80',
-    desc:'A crystal born in the space between worlds. Surrounds you with dark purple shadow wisps.',
+    ingredients:{ honey:8, flower:6, mushroom:5, pebble:4 },
+    result:{ id:'honey_lantern', name:'Honey Lantern', icon:'🏮' }, category:'legendary' },
+
+  { id:'m_e', worldId:'meadow', tier:'Epic',      tierColor:'#4ade80',
+    name:"Nature's Heart",    icon:'💚',
+    desc:'A living gem grown from meadow blooms. Pulses with soft green light.',
+    aura:'nature',
+    ingredients:{ flower:12, honey:8, mushroom:8, grass:8, berry:7, pebble:5 },
+    result:{ id:'natures_heart', name:"Nature's Heart", icon:'💚' }, category:'legendary' },
+
+  { id:'m_l', worldId:'meadow', tier:'Legendary', tierColor:'#ffd700',
+    name:'Meadow Crown',      icon:'👑',
+    desc:'A crown woven from every flower in the meadow. Glowing petals orbit you.',
+    aura:'meadow',
+    ingredients:{ flower:20, honey:15, mushroom:12, grass:12, berry:10, pebble:8 },
+    result:{ id:'meadow_crown', name:'Meadow Crown', icon:'👑' }, category:'legendary' },
+
+  // ── CRYSTAL CAVERNS ────────────────────────────────
+  { id:'c_r', worldId:'crystal', tier:'Rare',      tierColor:'#a78bfa',
+    name:'Moonrock Amulet',   icon:'🌑',
+    desc:'A smooth amulet carved from pure moonrock. Faintly luminous.',
     aura:'void',
-    ingredients:{
-      moonrock:6, crystal_pink:5, lichen:4, // Crystal
-      obsidian:6, ash_bloom:5, sulfur:4,    // Volcano
-      tundra_stone:5, snowberry:4,          // Tundra
-      mycel_root:5, spore_dust:4,           // Mushroom
-    },
-    result:{id:'void_crystal', name:'Void Crystal', icon:'🖤'},
-    category:'legendary',
-  },
-  {
-    id:'leg5',
-    name:'Sunfire Pendant',
-    icon:'☀️',
-    tier:'Epic',
-    tierColor:'#4ade80',
-    desc:'A blazing pendant that never cools. Wraps you in a warm orange flame aura.',
-    aura:'fire',
-    ingredients:{
-      honey:6, pebble:4, flower:5,         // Meadow
-      sunstone:6, sky_bloom:5, feather:4,  // Sky
-      lava_pearl:5, magma_gem:4, fire_moss:4, sulfur:4, // Volcano
-      amber_gem:5, bark:4,                 // Autumn
-    },
-    result:{id:'sunfire_pendant', name:'Sunfire Pendant', icon:'☀️'},
-    category:'legendary',
-  },
-  {
-    id:'leg6',
-    name:'Phantom Cloak',
-    icon:'👻',
-    tier:'Rare',
-    tierColor:'#a78bfa',
-    desc:'A cloak woven from fog and shadow. Makes you shimmer like a ghost.',
-    aura:'phantom',
-    ingredients:{
-      cloud_fluff:6, feather:5, wind_crystal:4, // Sky
-      lichen:5, moonrock:4,                     // Crystal
-      seaweed:5, driftwood:4,                   // Tropics
-      spore_dust:5, fairy_ring:4,               // Mushroom
-    },
-    result:{id:'phantom_cloak', name:'Phantom Cloak', icon:'👻'},
-    category:'legendary',
-  },
-  {
-    id:'leg7',
-    name:'Ocean Soul',
-    icon:'🌊',
-    tier:'Rare',
-    tierColor:'#a78bfa',
-    desc:'A gem from the deepest shores. Flows with a rippling blue aura.',
+    ingredients:{ moonrock:8, lichen:6, stardust:5, crystal_pink:4 },
+    result:{ id:'moonrock_amulet', name:'Moonrock Amulet', icon:'🌑' }, category:'legendary' },
+
+  { id:'c_e', worldId:'crystal', tier:'Epic',      tierColor:'#4ade80',
+    name:'Star Compass',      icon:'🧭',
+    desc:'A compass made of stardust that always points to wonder. Starlight trails follow you.',
+    aura:'sparks',
+    ingredients:{ stardust:12, glowstone:10, crystal_blue:8, moonrock:8, lichen:6, crystal_pink:5 },
+    result:{ id:'star_compass', name:'Star Compass', icon:'🧭' }, category:'legendary' },
+
+  { id:'c_l', worldId:'crystal', tier:'Legendary', tierColor:'#ffd700',
+    name:'Crystal Sovereign',  icon:'💎',
+    desc:'The rarest crystal in existence. Radiates a spinning prism of coloured light.',
+    aura:'rainbow',
+    ingredients:{ crystal_blue:20, crystal_pink:15, stardust:15, glowstone:12, moonrock:12, lichen:8 },
+    result:{ id:'crystal_sovereign', name:'Crystal Sovereign', icon:'💎' }, category:'legendary' },
+
+  // ── TROPICAL SHORE ─────────────────────────────────
+  { id:'t_r', worldId:'tropics', tier:'Rare',      tierColor:'#a78bfa',
+    name:'Driftwood Charm',   icon:'🪵',
+    desc:'A charm carved from storm-tossed driftwood. Smells of the open sea.',
     aura:'ocean',
-    ingredients:{
-      pearl:6, shell:6, coral:5, seaweed:5, coconut:4, driftwood:4, // Tropics
-      ice_crystal:5, frozen_flower:4,                               // Tundra
-      cloud_fluff:4, sky_bloom:4,                                   // Sky
-    },
-    result:{id:'ocean_soul', name:'Ocean Soul', icon:'🌊'},
-    category:'legendary',
-  },
+    ingredients:{ driftwood:8, shell:6, seaweed:5, coconut:4 },
+    result:{ id:'driftwood_charm', name:'Driftwood Charm', icon:'🪵' }, category:'legendary' },
+
+  { id:'t_e', worldId:'tropics', tier:'Epic',      tierColor:'#4ade80',
+    name:'Coral Throne',      icon:'🪸',
+    desc:'A crown of living coral. Rippling ocean rings flow outward as you move.',
+    aura:'ocean',
+    ingredients:{ coral:12, pearl:10, shell:9, seaweed:8, coconut:6, driftwood:5 },
+    result:{ id:'coral_throne', name:'Coral Throne', icon:'🪸' }, category:'legendary' },
+
+  { id:'t_l', worldId:'tropics', tier:'Legendary', tierColor:'#ffd700',
+    name:'Pearl of the Deep',  icon:'🫧',
+    desc:'A legendary pearl formed over centuries. Shimmers with deep ocean light.',
+    aura:'ocean',
+    ingredients:{ pearl:20, coral:16, shell:15, seaweed:12, coconut:10, driftwood:8 },
+    result:{ id:'pearl_deep', name:'Pearl of the Deep', icon:'🫧' }, category:'legendary' },
+
+  // ── AUTUMN FOREST ──────────────────────────────────
+  { id:'a_r', worldId:'autumn', tier:'Rare',      tierColor:'#a78bfa',
+    name:'Foxglove Ring',      icon:'🌺',
+    desc:'A ring of braided foxglove. Glows with a faint pink light.',
+    aura:'nature',
+    ingredients:{ foxglove:8, bark:6, acorn:5, red_leaf:6 },
+    result:{ id:'foxglove_ring', name:'Foxglove Ring', icon:'🌺' }, category:'legendary' },
+
+  { id:'a_e', worldId:'autumn', tier:'Epic',      tierColor:'#4ade80',
+    name:'Amber Shard',        icon:'🟡',
+    desc:'A massive shard of ancient amber. Wraps you in a warm orange flame.',
+    aura:'fire',
+    ingredients:{ amber_gem:12, bark:10, red_leaf:10, acorn:8, foxglove:6, pinecone:6 },
+    result:{ id:'amber_shard', name:'Amber Shard', icon:'🟡' }, category:'legendary' },
+
+  { id:'a_l', worldId:'autumn', tier:'Legendary', tierColor:'#ffd700',
+    name:'Heart of the Forest', icon:'🍂',
+    desc:'The spirit of the autumn forest, crystallised. Leaves swirl and dance around you.',
+    aura:'fire',
+    ingredients:{ red_leaf:22, acorn:16, amber_gem:14, bark:12, foxglove:10, pinecone:8 },
+    result:{ id:'heart_forest', name:'Heart of the Forest', icon:'🍂' }, category:'legendary' },
+
+  // ── SKY ISLANDS ────────────────────────────────────
+  { id:'s_r', worldId:'sky', tier:'Rare',      tierColor:'#a78bfa',
+    name:'Feather Charm',      icon:'🪶',
+    desc:'A charm woven from sky feathers. Lighter than air.',
+    aura:'phantom',
+    ingredients:{ feather:8, sky_bloom:6, cloud_fluff:5, wind_crystal:4 },
+    result:{ id:'feather_charm', name:'Feather Charm', icon:'🪶' }, category:'legendary' },
+
+  { id:'s_e', worldId:'sky', tier:'Epic',      tierColor:'#4ade80',
+    name:'Sunstone Halo',      icon:'🌟',
+    desc:'A halo of pure sunstone. Bright sparks trail behind you.',
+    aura:'sparks',
+    ingredients:{ sunstone:12, rainbow_shard:10, feather:9, cloud_fluff:8, wind_crystal:7, sky_bloom:6 },
+    result:{ id:'sunstone_halo', name:'Sunstone Halo', icon:'🌟' }, category:'legendary' },
+
+  { id:'s_l', worldId:'sky', tier:'Legendary', tierColor:'#ffd700',
+    name:'Rainbow Sovereign',  icon:'🌈',
+    desc:'A crown of pure rainbow light. Every colour of the sky radiates from you.',
+    aura:'rainbow',
+    ingredients:{ rainbow_shard:20, sunstone:16, cloud_fluff:14, wind_crystal:12, feather:10, sky_bloom:8 },
+    result:{ id:'rainbow_sovereign', name:'Rainbow Sovereign', icon:'🌈' }, category:'legendary' },
+
+  // ── VOLCANIC CALDERA ───────────────────────────────
+  { id:'v_r', worldId:'volcano', tier:'Rare',      tierColor:'#a78bfa',
+    name:'Fire Moss Wreath',   icon:'🌿',
+    desc:'A wreath of fire-resistant moss. Warm to the touch.',
+    aura:'fire',
+    ingredients:{ fire_moss:8, sulfur:6, ash_bloom:5, lava_pearl:4 },
+    result:{ id:'fire_moss_wreath', name:'Fire Moss Wreath', icon:'🌿' }, category:'legendary' },
+
+  { id:'v_e', worldId:'volcano', tier:'Epic',      tierColor:'#4ade80',
+    name:'Magma Core',         icon:'🔴',
+    desc:'A crystallised magma gem still warm from the caldera. Flames lick off you.',
+    aura:'fire',
+    ingredients:{ magma_gem:12, obsidian:10, lava_pearl:9, sulfur:8, fire_moss:7, ash_bloom:6 },
+    result:{ id:'magma_core', name:'Magma Core', icon:'🔴' }, category:'legendary' },
+
+  { id:'v_l', worldId:'volcano', tier:'Legendary', tierColor:'#ffd700',
+    name:'Obsidian Throne',    icon:'🖤',
+    desc:'A crown carved from the deepest obsidian. Dark shadow wisps swirl eternally.',
+    aura:'void',
+    ingredients:{ obsidian:22, magma_gem:16, lava_pearl:14, sulfur:12, fire_moss:10, ash_bloom:8 },
+    result:{ id:'obsidian_throne', name:'Obsidian Throne', icon:'🖤' }, category:'legendary' },
+
+  // ── FROZEN TUNDRA ──────────────────────────────────
+  { id:'sn_r', worldId:'snow', tier:'Rare',      tierColor:'#a78bfa',
+    name:'Frost Blossom',      icon:'🌷',
+    desc:'A flower frozen in eternal bloom. Rippling cold rings drift from it.',
+    aura:'ocean',
+    ingredients:{ frozen_flower:8, snowberry:6, frost_moss:5, tundra_stone:4 },
+    result:{ id:'frost_blossom', name:'Frost Blossom', icon:'🌷' }, category:'legendary' },
+
+  { id:'sn_e', worldId:'snow', tier:'Epic',      tierColor:'#4ade80',
+    name:'Aurora Crown',       icon:'🔵',
+    desc:'A crown of crystallised aurora dust. A ghostly shimmer pulses around you.',
+    aura:'phantom',
+    ingredients:{ aurora_dust:12, ice_crystal:10, frozen_flower:9, snowberry:8, frost_moss:7, tundra_stone:6 },
+    result:{ id:'aurora_crown', name:'Aurora Crown', icon:'🔵' }, category:'legendary' },
+
+  { id:'sn_l', worldId:'snow', tier:'Legendary', tierColor:'#ffd700',
+    name:'Heart of Winter',    icon:'❄️',
+    desc:'The frozen heart of the tundra. Colours of the aurora dance around you endlessly.',
+    aura:'rainbow',
+    ingredients:{ ice_crystal:22, aurora_dust:18, frozen_flower:14, snowberry:12, frost_moss:10, tundra_stone:8 },
+    result:{ id:'heart_winter', name:'Heart of Winter', icon:'❄️' }, category:'legendary' },
+
+  // ── MYCELIUM REALM ─────────────────────────────────
+  { id:'mu_r', worldId:'mushroom', tier:'Rare',      tierColor:'#a78bfa',
+    name:'Amber Spore',        icon:'🟡',
+    desc:'A spore preserved in amber sap. Glows with a soft golden light.',
+    aura:'nature',
+    ingredients:{ amber_sap:8, spore_dust:6, mycel_root:5, fairy_ring:4 },
+    result:{ id:'amber_spore', name:'Amber Spore', icon:'🟡' }, category:'legendary' },
+
+  { id:'mu_e', worldId:'mushroom', tier:'Epic',      tierColor:'#4ade80',
+    name:'Mycelium Web',       icon:'⭕',
+    desc:'A ring of living mycelium. Dark void wisps trail from it as you move.',
+    aura:'void',
+    ingredients:{ mycel_root:12, fairy_ring:10, glow_filament:9, spore_cap:9, spore_dust:7, amber_sap:6 },
+    result:{ id:'mycelium_web', name:'Mycelium Web', icon:'⭕' }, category:'legendary' },
+
+  { id:'mu_l', worldId:'mushroom', tier:'Legendary', tierColor:'#ffd700',
+    name:'Spore Sovereign',    icon:'🍄',
+    desc:'The legendary mushroom crown of the Mycelium Realm. Bioluminescent sparks spiral around you.',
+    aura:'sparks',
+    ingredients:{ spore_cap:22, glow_filament:18, mycel_root:14, fairy_ring:12, spore_dust:10, amber_sap:8 },
+    result:{ id:'spore_sovereign', name:'Spore Sovereign', icon:'🍄' }, category:'legendary' },
+
 ];
 
-// All ingredients across legendaries for lookup
+// All resources across all worlds for ingredient lookup
 const LEGENDARY_RES_LOOKUP = {};
 WORLDS.forEach(w => w.resources.forEach(r => { LEGENDARY_RES_LOOKUP[r.id] = r; }));
 // ═══════════════════════════════════════════════════════
@@ -2976,10 +3030,23 @@ function equipItem(idx) {
 function renderLegendary() {
   const el = document.getElementById('tab-legendary');
   if (!el) return;
-  let html = '<div class="section-label">Legendary Crafts</div>';
-  html += '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:10px;line-height:1.5;">Rare items requiring resources from multiple worlds. Grants special auras when equipped.</div>';
+  const world = currentWorld();
 
-  LEGENDARY_RECIPES.forEach(recipe => {
+  // Show current world's recipes (base worlds only; procedural worlds get a message)
+  const worldRecipes = LEGENDARY_RECIPES.filter(r => r.worldId === world.id);
+
+  let html = `<div class="section-label">Rare Crafts — ${world.name}</div>`;
+
+  if (worldRecipes.length === 0) {
+    html += `<div style="font-size:11px;color:rgba(255,255,255,0.3);padding:16px 0;text-align:center;line-height:1.7">No rare crafts in this dimension.<br>Visit one of the 8 base worlds to craft legendary items.</div>`;
+    el.innerHTML = html; return;
+  }
+
+  html += `<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:10px;line-height:1.5">World-exclusive items — only craftable and usable here. Grants special auras when equipped.</div>`;
+
+  // Sort by tier: Rare → Epic → Legendary
+  const order = { Rare:0, Epic:1, Legendary:2 };
+  [...worldRecipes].sort((a,b) => order[a.tier]-order[b.tier]).forEach(recipe => {
     const ings = recipe.ingredients;
     let have = 0, total = 0;
     Object.entries(ings).forEach(([id, amt]) => {
@@ -2988,10 +3055,11 @@ function renderLegendary() {
     });
     const pct = total > 0 ? Math.round(have / total * 100) : 0;
     const canCraft = have === total;
+    const alreadyCrafted = state.crafted.some(c => c.id === recipe.result.id);
     const tierClass = 'tier-' + recipe.tier.toLowerCase();
     const tierCol = recipe.tierColor;
 
-    html += `<div class="leg-card ${tierClass}${canCraft ? ' craftable' : ''}">`;
+    html += `<div class="leg-card ${tierClass}${canCraft && !alreadyCrafted ? ' craftable' : ''}">`;
     html += `<span class="leg-tier-badge" style="background:${tierCol}22;color:${tierCol};border:1px solid ${tierCol}44">${recipe.tier}</span>`;
     html += `<div class="leg-header"><span class="leg-icon">${recipe.icon}</span><span class="leg-name">${recipe.name}</span></div>`;
     html += `<div class="leg-desc">${recipe.desc}</div>`;
@@ -3004,10 +3072,13 @@ function renderLegendary() {
     html += `</div>`;
     html += `<div class="leg-progress-wrap"><div class="leg-progress-bar" style="width:${pct}%;background:${tierCol}"></div></div>`;
     html += `<div style="font-size:9px;color:rgba(255,255,255,0.3);margin-bottom:6px">${have}/${total} ingredients · ${pct}%</div>`;
-    if (canCraft) {
+
+    if (alreadyCrafted) {
+      html += `<button class="leg-craft-btn cannot" disabled>✅ Already crafted — in your bag</button>`;
+    } else if (canCraft) {
       html += `<button class="leg-craft-btn can" onclick="craftLegendary('${recipe.id}')">✨ Craft ${recipe.name}</button>`;
     } else {
-      html += `<button class="leg-craft-btn cannot" disabled>Collect more ingredients</button>`;
+      html += `<button class="leg-craft-btn cannot" disabled>Collect more ingredients (${pct}%)</button>`;
     }
     html += '</div>';
   });
@@ -3020,20 +3091,22 @@ function craftLegendary(recipeId) {
   if (!recipe) return;
   const canCraft = Object.entries(recipe.ingredients).every(([id, amt]) => (state.inventory[id] || 0) >= amt);
   if (!canCraft) return;
+  // Don't allow crafting if already in bag
+  if (state.crafted.some(c => c.id === recipe.result.id)) return;
   Object.entries(recipe.ingredients).forEach(([id, amt]) => { state.inventory[id] -= amt; });
   state.crafted.push({
     id:          recipe.result.id,
     name:        recipe.result.name,
     icon:        recipe.result.icon,
     effect:      null,
-    forWorldId:  null,   // legendary items work everywhere
-    forWorldName:null,
+    forWorldId:  recipe.worldId,          // world-locked like all other crafted items
+    forWorldName:WORLDS.find(w=>w.id===recipe.worldId)?.name || recipe.worldId,
     legendary:   true,
     aura:        recipe.aura,
     tier:        recipe.tier,
     tierColor:   recipe.tierColor,
   });
-  showToast(`✨ ${recipe.icon} ${recipe.name} crafted! Legendary item added to your bag!`);
+  showToast(`✨ ${recipe.icon} ${recipe.name} crafted! Check your bag!`);
   renderInventory();
   renderLegendary();
   scheduleSave();
@@ -3071,7 +3144,7 @@ function doTransition(nextDim, label) {
       }
     }
     generateWorld(nextWorld);
-    updateHeader(); renderInventory(); renderCrafting(); renderCodex(); scheduleSave();
+    updateHeader(); renderInventory(); renderCrafting(); renderCodex(); renderLegendary(); scheduleSave();
     if (musicOn) playWorldMusic(nextWorld.music);
     overlay.style.background='rgba(0,0,0,0)';
     setTimeout(()=>{overlay.classList.remove('active'); state.transitioning=false;},500);
