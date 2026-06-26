@@ -2501,8 +2501,9 @@ function drawPlayer(now,world) {
   ctx.beginPath(); ctx.ellipse(ppx,ppy+12-bounce,11,4,0,0,Math.PI*2); ctx.fill();
 
   // Character
-  ctx.save(); ctx.translate(ppx,ppy-bounce);
-  drawCharShape(ctx, player.facing, player.moving, now, world.accent);
+  ctx.save(); ctx.translate(ppx, ppy - bounce);
+  if (player.facing === 'left') ctx.scale(-1, 1); // mirror for left-facing
+  drawCharShape(ctx, player.facing === 'left' ? 'right' : player.facing, player.moving, now, world.accent);
   ctx.restore();
 
   // ── Equipped item — floats above character ──────
