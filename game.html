@@ -1423,7 +1423,102 @@ function drawCharShape(c, facing, moving, now, accentColor) {
     c.fillStyle=skin; c.fillRect(-13,-4,4,10); c.fillRect(9,-4,4,10);
   }
 
-  // ── DRAW ORDER ───────────────────────────────────────
+  // ── SIDE PROFILE (used for left/right facing) ─────────
+  // The canvas is already flipped for 'left' in drawPlayer,
+  // so we always draw the right-facing profile here.
+  function drawSideProfile() {
+    const legSwing  = moving ? Math.sin(now * 12) * 5 : 0;
+    const armSwingF = moving ? Math.sin(now * 12) * 8 : 0;
+
+    // ── Rear leg (further from viewer — drawn first, behind body) ──
+    c.fillStyle = pants;
+    c.beginPath(); c.roundRect(-3, 8 - legSwing * 0.5, 6, 12, [0,0,3,3]); c.fill();
+    c.fillStyle = '#2a2a2a';
+    c.beginPath(); c.roundRect(-4, 18 - legSwing * 0.5, 8, 5, [0,0,3,3]); c.fill();
+
+    // ── Body / outfit (side view — narrower) ──────────────
+    c.fillStyle = oc;
+    c.beginPath(); c.roundRect(-6, -6, 13, 16, 3); c.fill();
+    if (trim) {
+      c.fillStyle = trim;
+      c.beginPath(); c.roundRect(-6, -6, 13, 5, [3,3,0,0]); c.fill();
+    }
+
+    // Backpack (visible from the side — always on the back = left side)
+    c.fillStyle = '#e07b3a';
+    c.beginPath(); c.roundRect(-10, -4, 5, 11, 2); c.fill();
+    if (trim) { c.fillStyle = trim; c.beginPath(); c.roundRect(-10, -4, 5, 4, [2,2,0,0]); c.fill(); }
+
+    // ── Rear arm (behind body) ─────────────────────────────
+    c.fillStyle = skin;
+    c.beginPath();
+    c.roundRect(-5, -3 - armSwingF * 0.4, 4, 11, 2); c.fill();
+
+    // ── Front leg (closer to viewer — drawn over body) ─────
+    c.fillStyle = pants;
+    c.beginPath(); c.roundRect(0, 8 + legSwing * 0.5, 6, 12, [0,0,3,3]); c.fill();
+    c.fillStyle = '#2a2a2a'; // front shoe extends slightly forward
+    c.beginPath(); c.roundRect(-1, 18 + legSwing * 0.5, 10, 5, [0,0,4,4]); c.fill();
+
+    // ── Front arm (in front of body — swings forward) ──────
+    c.fillStyle = skin;
+    c.beginPath();
+    c.roundRect(3, -3 + armSwingF * 0.6, 4, 11, 2); c.fill();
+    // Hand
+    c.beginPath(); c.arc(5, 8 + armSwingF * 0.6, 2.5, 0, Math.PI * 2); c.fill();
+
+    // ── Head (side view — ellipse, slightly forward) ───────
+    c.fillStyle = skin;
+    c.beginPath(); c.ellipse(2, -17, 8, 10, 0, 0, Math.PI * 2); c.fill();
+
+    // Nose
+    c.fillStyle = skin;
+    c.beginPath(); c.ellipse(10, -15, 2.5, 1.8, 0.4, 0, Math.PI * 2); c.fill();
+
+    // Eye (one eye visible from the side)
+    c.fillStyle = '#222';
+    c.beginPath(); c.ellipse(7, -18, 2, 2.5, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#fff';
+    c.beginPath(); c.ellipse(8, -19, 0.8, 1, 0, 0, Math.PI * 2); c.fill();
+
+    // Mouth
+    c.strokeStyle = '#a0522d'; c.lineWidth = 1.2; c.lineCap = 'round';
+    c.beginPath(); c.arc(8, -13, 2.5, -0.2, Math.PI * 0.5); c.stroke();
+
+    // Hair (side view)
+    if (!hs.bald) {
+      c.fillStyle = hair;
+      // Top of head / back of hair
+      c.beginPath(); c.ellipse(0, -22, 8, 6, 0, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.roundRect(-8, -24, 9, 14, [4,0,0,4]); c.fill();
+      if (hs.long || hs.braids) {
+        c.beginPath(); c.roundRect(-9, -22, 5, 22, 2); c.fill();
+      }
+      if (hs.afro) {
+        c.beginPath(); c.arc(0, -22, 12, 0, Math.PI * 2); c.fill();
+      }
+      if (hs.bun || hs.twinbuns) {
+        c.beginPath(); c.arc(-5, -26, 6, 0, Math.PI * 2); c.fill();
+      }
+      if (hs.ponytail) {
+        c.beginPath(); c.roundRect(-10, -22, 4, 14, 2); c.fill();
+        c.fillStyle = '#ff69b4';
+        c.beginPath(); c.arc(-8, -9, 2.5, 0, Math.PI * 2); c.fill();
+      }
+      if (hs.spiky || hs.mohawk) {
+        [[-2,-28],[-5,-30],[-1,-26]].forEach(([sx,sy]) => {
+          c.fillStyle = hair;
+          c.beginPath(); c.moveTo(sx-2,-22); c.lineTo(sx,sy); c.lineTo(sx+2,-22); c.closePath(); c.fill();
+        });
+      }
+    }
+
+    // Accessory
+    if (acc.icon) {
+      c.font = '13px serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(acc.icon, 2, -32);
+    }
+  }
   // Draw cape first (behind body)
   if (os.draw === 'cape') drawCape();
 
@@ -1575,20 +1670,23 @@ function drawCharShape(c, facing, moving, now, accentColor) {
 
   // Face
   if (facing!=='up') {
-    // Eye drawing helper
+    // Pupils shift in the direction of travel
+    const eyeShift = facing==='right' ? 1.2 : facing==='left' ? -1.2 : 0;
+
     function drawEyePair(lx, rx, ey, rx_w, ry_h, irisColor) {
+      // Whites / outer eye
       c.fillStyle='#222';
       c.beginPath(); c.ellipse(lx,ey,rx_w,ry_h,0,0,Math.PI*2); c.fill();
       c.beginPath(); c.ellipse(rx,ey,rx_w,ry_h,0,0,Math.PI*2); c.fill();
       if (irisColor) {
         c.fillStyle=irisColor;
-        c.beginPath(); c.ellipse(lx,ey,rx_w*0.6,ry_h*0.6,0,0,Math.PI*2); c.fill();
-        c.beginPath(); c.ellipse(rx,ey,rx_w*0.6,ry_h*0.6,0,0,Math.PI*2); c.fill();
+        c.beginPath(); c.ellipse(lx+eyeShift*0.5,ey,rx_w*0.6,ry_h*0.6,0,0,Math.PI*2); c.fill();
+        c.beginPath(); c.ellipse(rx+eyeShift*0.5,ey,rx_w*0.6,ry_h*0.6,0,0,Math.PI*2); c.fill();
       }
-      // Shine
+      // Pupils shifted in look direction
       c.fillStyle='#fff';
-      c.beginPath(); c.ellipse(lx+1,ey-1,Math.max(0.5,rx_w*0.35),Math.max(0.5,ry_h*0.35),0,0,Math.PI*2); c.fill();
-      c.beginPath(); c.ellipse(rx+1,ey-1,Math.max(0.5,rx_w*0.35),Math.max(0.5,ry_h*0.35),0,0,Math.PI*2); c.fill();
+      c.beginPath(); c.ellipse(lx+eyeShift,ey-1,Math.max(0.5,rx_w*0.35),Math.max(0.5,ry_h*0.35),0,0,Math.PI*2); c.fill();
+      c.beginPath(); c.ellipse(rx+eyeShift,ey-1,Math.max(0.5,rx_w*0.35),Math.max(0.5,ry_h*0.35),0,0,Math.PI*2); c.fill();
     }
 
     if (eyes==='round')   drawEyePair(-3,3,-12,2.5,3,null);
@@ -1596,6 +1694,9 @@ function drawCharShape(c, facing, moving, now, accentColor) {
       c.fillStyle='#222';
       c.beginPath(); c.ellipse(-3,-11.5,3,1.5,0,0,Math.PI*2); c.fill();
       c.beginPath(); c.ellipse(3,-11.5,3,1.5,0,0,Math.PI*2); c.fill();
+      c.fillStyle='#fff';
+      c.beginPath(); c.ellipse(-3+eyeShift,-12.5,1,0.7,0,0,Math.PI*2); c.fill();
+      c.beginPath(); c.ellipse(3+eyeShift,-12.5,1,0.7,0,0,Math.PI*2); c.fill();
     }
     else if (eyes==='wide')    drawEyePair(-3,3,-12,3,4,null);
     else if (eyes==='blue')    drawEyePair(-3,3,-12,2.5,3,'#3399ff');
@@ -1604,69 +1705,65 @@ function drawCharShape(c, facing, moving, now, accentColor) {
     else if (eyes==='purple')  drawEyePair(-3,3,-12,2.5,3,'#9933cc');
     else if (eyes==='star') {
       c.font='7px serif'; c.textAlign='center'; c.textBaseline='middle';
-      c.fillStyle='#fbbf24'; c.fillText('★',-3,-12); c.fillText('★',3,-12);
+      c.fillStyle='#fbbf24'; c.fillText('★',-3+eyeShift,-12); c.fillText('★',3+eyeShift,-12);
     }
     else if (eyes==='happy') {
-      // Happy closed arc eyes
       c.strokeStyle='#222'; c.lineWidth=1.5; c.lineCap='round';
-      c.beginPath(); c.arc(-3,-11,3,-Math.PI,0); c.stroke();
-      c.beginPath(); c.arc(3,-11,3,-Math.PI,0); c.stroke();
+      c.beginPath(); c.arc(-3+eyeShift*0.5,-11,3,-Math.PI,0); c.stroke();
+      c.beginPath(); c.arc(3+eyeShift*0.5,-11,3,-Math.PI,0); c.stroke();
     }
     else if (eyes==='angry') {
-      // Angry slanted brows + narrow eyes
       c.fillStyle='#222';
       c.beginPath(); c.ellipse(-3,-11.5,3,1.5,0.3,0,Math.PI*2); c.fill();
       c.beginPath(); c.ellipse(3,-11.5,3,1.5,-0.3,0,Math.PI*2); c.fill();
-      // Angry brows
+      c.fillStyle='#fff';
+      c.beginPath(); c.ellipse(-3+eyeShift,-12.5,1,0.7,0,0,Math.PI*2); c.fill();
+      c.beginPath(); c.ellipse(3+eyeShift,-12.5,1,0.7,0,0,Math.PI*2); c.fill();
       c.strokeStyle='#222'; c.lineWidth=1.5; c.lineCap='round';
       c.beginPath(); c.moveTo(-6,-15); c.lineTo(-1,-13); c.stroke();
       c.beginPath(); c.moveTo(6,-15); c.lineTo(1,-13); c.stroke();
     }
     else if (eyes==='sleepy') {
-      // Half-closed droopy eyes
       c.fillStyle='#222';
       c.beginPath(); c.ellipse(-3,-12,2.5,1.5,0,0,Math.PI*2); c.fill();
       c.beginPath(); c.ellipse(3,-12,2.5,1.5,0,0,Math.PI*2); c.fill();
-      // Droopy lid lines
+      c.fillStyle='#fff';
+      c.beginPath(); c.ellipse(-3+eyeShift,-12.8,0.9,0.7,0,0,Math.PI*2); c.fill();
+      c.beginPath(); c.ellipse(3+eyeShift,-12.8,0.9,0.7,0,0,Math.PI*2); c.fill();
       c.strokeStyle='#a0522d'; c.lineWidth=1.2;
       c.beginPath(); c.moveTo(-5.5,-13); c.lineTo(-0.5,-13); c.stroke();
       c.beginPath(); c.moveTo(0.5,-13); c.lineTo(5.5,-13); c.stroke();
     }
     else if (eyes==='puppy') {
-      // Big shiny puppy eyes
       drawEyePair(-3,3,-11.5,3.5,4.5,null);
-      // Extra large shine
       c.fillStyle='rgba(255,255,255,0.9)';
-      c.beginPath(); c.ellipse(-2,-13,2,2.5,0,0,Math.PI*2); c.fill();
-      c.beginPath(); c.ellipse(4,-13,2,2.5,0,0,Math.PI*2); c.fill();
+      c.beginPath(); c.ellipse(-2+eyeShift,-13,2,2.5,0,0,Math.PI*2); c.fill();
+      c.beginPath(); c.ellipse(4+eyeShift,-13,2,2.5,0,0,Math.PI*2); c.fill();
     }
     else if (eyes==='sparkle') {
       drawEyePair(-3,3,-12,2.5,3,'#a855f7');
-      // Sparkle dots around eyes
       c.fillStyle='#fbbf24';
       [[-6,-15],[-1,-15],[5,-15],[-7,-11],[6,-11]].forEach(([sx,sy])=>{
         c.beginPath(); c.arc(sx,sy,0.8,0,Math.PI*2); c.fill();
       });
     }
     else if (eyes==='diamond') {
-      // Diamond-shaped eyes
       c.fillStyle='#222';
       [-3,3].forEach(ex=>{
         c.beginPath(); c.moveTo(ex,-15); c.lineTo(ex+2.5,-12); c.lineTo(ex,-9); c.lineTo(ex-2.5,-12); c.closePath(); c.fill();
         c.fillStyle='#7dd3fc';
         c.beginPath(); c.moveTo(ex,-14); c.lineTo(ex+1.5,-12); c.lineTo(ex,-10); c.lineTo(ex-1.5,-12); c.closePath(); c.fill();
         c.fillStyle='#fff';
-        c.beginPath(); c.arc(ex,-13,0.8,0,Math.PI*2); c.fill();
+        c.beginPath(); c.arc(ex+eyeShift,-13,0.8,0,Math.PI*2); c.fill();
         c.fillStyle='#222';
       });
     }
     else if (eyes==='spiral') {
-      // Swirly dizzy eyes
       c.strokeStyle='#222'; c.lineWidth=1.2;
       [-3,3].forEach(ex=>{
         c.beginPath();
         for (let a=0; a<Math.PI*3; a+=0.15) {
-          const r=a/4; const px=ex+Math.cos(a)*r, py=-12+Math.sin(a)*r;
+          const r=a/4; const px=ex+eyeShift*0.4+Math.cos(a)*r, py=-12+Math.sin(a)*r;
           a===0 ? c.moveTo(px,py) : c.lineTo(px,py);
         }
         c.stroke();
@@ -2330,7 +2427,7 @@ function collectItemsAt(wx,wy) {
       const id=item.resource.id;
       state.inventory[id]=(state.inventory[id]||0)+1;
       showToast(`${item.resource.icon} ${item.resource.name} collected!`);
-      renderInventory(); renderCrafting(); scheduleSave();
+      renderInventory(); renderCrafting(); renderLegendary(); scheduleSave();
     }
   });
 }
@@ -2502,7 +2599,7 @@ function drawPlayer(now,world) {
 
   // Character
   ctx.save(); ctx.translate(ppx, ppy - bounce);
-  if (player.facing === 'left') ctx.scale(-1, 1); // mirror for left-facing
+  if (player.facing === 'left') ctx.scale(-1, 1);
   drawCharShape(ctx, player.facing === 'left' ? 'right' : player.facing, player.moving, now, world.accent);
   ctx.restore();
 
@@ -2965,7 +3062,7 @@ function craftRecipe(recipeId) {
       updateGoalBanner();
     }
   }
-  renderInventory(); renderCrafting(); updateHeader(); scheduleSave();
+  renderInventory(); renderCrafting(); renderLegendary(); updateHeader(); scheduleSave();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -3223,7 +3320,7 @@ loadGame();
 loadCharacter();
 generateWorld(currentWorld());
 centerCamera();
-updateHeader(); renderInventory(); renderCrafting(); renderCodex();
+updateHeader(); renderInventory(); renderCrafting(); renderCodex(); renderLegendary();
 requestAnimationFrame(update);
 </script>
 </body>
