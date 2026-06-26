@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>World Hopper</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -133,6 +136,30 @@
   .goal-desc { font-size: 10px; color: rgba(255,255,255,0.5); line-height: 1.5; }
   .goal-progress { height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 6px; overflow: hidden; }
   .goal-progress-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+  /* Legendary cards */
+  .leg-card { border-radius: 11px; padding: 11px; margin-bottom: 9px; position: relative; overflow: hidden; }
+  .leg-card::before { content:''; position:absolute; inset:0; opacity:0.06; pointer-events:none; }
+  .leg-card.tier-legendary { background: rgba(255,215,0,0.07); border: 1px solid rgba(255,215,0,0.3); }
+  .leg-card.tier-legendary::before { background: linear-gradient(135deg,#ffd700,#ff8c00); }
+  .leg-card.tier-epic { background: rgba(74,222,128,0.07); border: 1px solid rgba(74,222,128,0.25); }
+  .leg-card.tier-epic::before { background: linear-gradient(135deg,#4ade80,#06b6d4); }
+  .leg-card.tier-rare { background: rgba(167,139,250,0.07); border: 1px solid rgba(167,139,250,0.25); }
+  .leg-card.tier-rare::before { background: linear-gradient(135deg,#a78bfa,#ec4899); }
+  .leg-card.craftable { box-shadow: 0 0 18px rgba(255,215,0,0.15); }
+  .leg-tier-badge { display:inline-block; font-size:9px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; padding:2px 7px; border-radius:8px; margin-bottom:6px; }
+  .leg-header { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+  .leg-icon { font-size:22px; line-height:1; }
+  .leg-name { font-size:12px; font-weight:700; color:#fff; }
+  .leg-desc { font-size:10px; color:rgba(255,255,255,0.45); line-height:1.5; margin-bottom:7px; }
+  .leg-ingredients { display:flex; flex-wrap:wrap; gap:3px; margin-bottom:8px; }
+  .leg-ing { font-size:9px; padding:2px 6px; border-radius:7px; border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.45); }
+  .leg-ing.have { color:rgba(100,220,150,0.9); border-color:rgba(100,220,150,0.3); }
+  .leg-progress-wrap { height:4px; background:rgba(255,255,255,0.1); border-radius:2px; margin-bottom:8px; overflow:hidden; }
+  .leg-progress-bar { height:100%; border-radius:2px; transition:width 0.4s; }
+  .leg-craft-btn { width:100%; padding:7px; border-radius:7px; font-size:11px; font-weight:700; border:none; cursor:pointer; letter-spacing:0.03em; transition:all 0.15s; }
+  .leg-craft-btn.can { background:rgba(255,215,0,0.2); color:#ffd700; border:1px solid rgba(255,215,0,0.4); }
+  .leg-craft-btn.can:hover { background:rgba(255,215,0,0.32); }
+  .leg-craft-btn.cannot { background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.22); border:1px solid rgba(255,255,255,0.08); cursor:not-allowed; }
 </style>
 </head>
 <body>
@@ -166,10 +193,12 @@
     <div class="panel-tab-bar">
       <button class="panel-tab active" data-tab="inventory">🎒 Bag</button>
       <button class="panel-tab" data-tab="crafting">⚗️ Craft</button>
+      <button class="panel-tab" data-tab="legendary">⭐ Rare</button>
       <button class="panel-tab" data-tab="codex">📖 Codex</button>
     </div>
     <div id="tab-inventory" class="panel-content active"></div>
     <div id="tab-crafting" class="panel-content"></div>
+    <div id="tab-legendary" class="panel-content"></div>
     <div id="tab-codex" class="panel-content"></div>
   </div>
 </div>
@@ -396,7 +425,139 @@ const RECIPES = [
 ];
 
 // ═══════════════════════════════════════════════════════
-// CHARACTER CUSTOMIZATION
+// LEGENDARY RECIPES — rare items needing resources from
+// multiple worlds. Each grants a special visual aura/effect
+// on the character when equipped.
+// ═══════════════════════════════════════════════════════
+const LEGENDARY_RECIPES = [
+  {
+    id:'leg1',
+    name:'Crown of All Worlds',
+    icon:'🌐',
+    tier:'Legendary',
+    tierColor:'#ffd700',
+    desc:'A crown forged from the essence of every dimension. Radiates a golden aurora that shifts through all world colours.',
+    aura:'rainbow',
+    ingredients:{
+      flower:5, honey:3,        // Meadow
+      crystal_blue:4, stardust:3, // Crystal
+      pearl:3, coral:3,         // Tropics
+      amber_gem:3, red_leaf:4,  // Autumn
+      rainbow_shard:4, sunstone:3, // Sky
+      magma_gem:3, obsidian:2,  // Volcano
+      ice_crystal:3, aurora_dust:4, // Tundra
+      spore_cap:3, glow_filament:3, // Mushroom
+    },
+    result:{id:'crown_all_worlds', name:'Crown of All Worlds', icon:'🌐'},
+    category:'legendary',
+  },
+  {
+    id:'leg2',
+    name:'Dimensional Staff',
+    icon:'🔱',
+    tier:'Legendary',
+    tierColor:'#ffd700',
+    desc:'A staff crackling with portal energy. Leaves a shimmering trail of sparks wherever you walk.',
+    aura:'sparks',
+    ingredients:{
+      stardust:5, glowstone:4,  // Crystal
+      rainbow_shard:5, wind_crystal:4, // Sky
+      magma_gem:4, lava_pearl:3, // Volcano
+      aurora_dust:5, ice_crystal:4, // Tundra
+      glow_filament:4, fairy_ring:3, // Mushroom
+    },
+    result:{id:'dimensional_staff', name:'Dimensional Staff', icon:'🔱'},
+    category:'legendary',
+  },
+  {
+    id:'leg3',
+    name:'Nature\'s Heart',
+    icon:'💚',
+    tier:'Epic',
+    tierColor:'#4ade80',
+    desc:'A living gem grown from the natural worlds. Pulses with a soft green glow.',
+    aura:'nature',
+    ingredients:{
+      flower:8, mushroom:6, berry:5, honey:5, grass:6, // Meadow
+      red_leaf:6, acorn:5, foxglove:4,                 // Autumn
+      coconut:4, seaweed:4, coral:4,                   // Tropics
+      frost_moss:4, frozen_flower:4,                   // Tundra
+    },
+    result:{id:'natures_heart', name:"Nature's Heart", icon:'💚'},
+    category:'legendary',
+  },
+  {
+    id:'leg4',
+    name:'Void Crystal',
+    icon:'🖤',
+    tier:'Epic',
+    tierColor:'#4ade80',
+    desc:'A crystal born in the space between worlds. Surrounds you with dark purple shadow wisps.',
+    aura:'void',
+    ingredients:{
+      moonrock:6, crystal_pink:5, lichen:4, // Crystal
+      obsidian:6, ash_bloom:5, sulfur:4,    // Volcano
+      tundra_stone:5, snowberry:4,          // Tundra
+      mycel_root:5, spore_dust:4,           // Mushroom
+    },
+    result:{id:'void_crystal', name:'Void Crystal', icon:'🖤'},
+    category:'legendary',
+  },
+  {
+    id:'leg5',
+    name:'Sunfire Pendant',
+    icon:'☀️',
+    tier:'Epic',
+    tierColor:'#4ade80',
+    desc:'A blazing pendant that never cools. Wraps you in a warm orange flame aura.',
+    aura:'fire',
+    ingredients:{
+      honey:6, pebble:4, flower:5,         // Meadow
+      sunstone:6, sky_bloom:5, feather:4,  // Sky
+      lava_pearl:5, magma_gem:4, fire_moss:4, sulfur:4, // Volcano
+      amber_gem:5, bark:4,                 // Autumn
+    },
+    result:{id:'sunfire_pendant', name:'Sunfire Pendant', icon:'☀️'},
+    category:'legendary',
+  },
+  {
+    id:'leg6',
+    name:'Phantom Cloak',
+    icon:'👻',
+    tier:'Rare',
+    tierColor:'#a78bfa',
+    desc:'A cloak woven from fog and shadow. Makes you shimmer like a ghost.',
+    aura:'phantom',
+    ingredients:{
+      cloud_fluff:6, feather:5, wind_crystal:4, // Sky
+      lichen:5, moonrock:4,                     // Crystal
+      seaweed:5, driftwood:4,                   // Tropics
+      spore_dust:5, fairy_ring:4,               // Mushroom
+    },
+    result:{id:'phantom_cloak', name:'Phantom Cloak', icon:'👻'},
+    category:'legendary',
+  },
+  {
+    id:'leg7',
+    name:'Ocean Soul',
+    icon:'🌊',
+    tier:'Rare',
+    tierColor:'#a78bfa',
+    desc:'A gem from the deepest shores. Flows with a rippling blue aura.',
+    aura:'ocean',
+    ingredients:{
+      pearl:6, shell:6, coral:5, seaweed:5, coconut:4, driftwood:4, // Tropics
+      ice_crystal:5, frozen_flower:4,                               // Tundra
+      cloud_fluff:4, sky_bloom:4,                                   // Sky
+    },
+    result:{id:'ocean_soul', name:'Ocean Soul', icon:'🌊'},
+    category:'legendary',
+  },
+];
+
+// All ingredients across legendaries for lookup
+const LEGENDARY_RES_LOOKUP = {};
+WORLDS.forEach(w => w.resources.forEach(r => { LEGENDARY_RES_LOOKUP[r.id] = r; }));
 // ═══════════════════════════════════════════════════════
 const SKIN_TONES = [
   { id:'s1', color:'#ffcda0', label:'Light'       },
@@ -2290,21 +2451,113 @@ function drawPlayer(now,world) {
   drawCharShape(ctx, player.facing, player.moving, now, world.accent);
   ctx.restore();
 
-  // ── Equipped keepsake — floats above character ──────
+  // ── Equipped item — floats above character ──────
   const equipped = state.equippedIdx !== null ? state.crafted[state.equippedIdx] : null;
   if (equipped) {
     const fy = ppy - bounce - 46 + Math.sin(now * 2.2) * 3;
     const itemPulse = 0.8 + 0.2 * Math.sin(now * 3);
-    // Soft halo behind item
+
+    // ── Legendary aura effects ────────────────────
+    if (equipped.legendary && equipped.aura) {
+      const aura = equipped.aura;
+      const tc = equipped.tierColor || '#ffd700';
+
+      if (aura === 'rainbow') {
+        // Rotating rainbow ring around player
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2 + now * 1.2;
+          const rx = ppx + Math.cos(a) * 30, ry = ppy - bounce + Math.sin(a) * 14;
+          const hue = (i / 8 * 360 + now * 60) % 360;
+          ctx.save(); ctx.globalAlpha = 0.7 + 0.3 * Math.sin(now * 3 + i);
+          ctx.fillStyle = `hsl(${hue},100%,65%)`;
+          ctx.shadowColor = `hsl(${hue},100%,65%)`; ctx.shadowBlur = 8;
+          ctx.beginPath(); ctx.arc(rx, ry, 3.5, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+      } else if (aura === 'sparks') {
+        // Sparks trailing from the staff
+        for (let i = 0; i < 6; i++) {
+          const age = ((now * 1.5 + i * 0.4) % 1);
+          const a = (i / 6) * Math.PI * 2 + now * 2;
+          const r = age * 28;
+          const sx = ppx + Math.cos(a) * r, sy = ppy - bounce + Math.sin(a) * r * 0.5;
+          ctx.save(); ctx.globalAlpha = (1 - age) * 0.8;
+          ctx.fillStyle = '#fbbf24'; ctx.shadowColor = '#f97316'; ctx.shadowBlur = 10;
+          ctx.beginPath(); ctx.arc(sx, sy, 2.5 * (1 - age), 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+      } else if (aura === 'nature') {
+        // Soft green leaf-like orbits
+        const haloG = ctx.createRadialGradient(ppx, ppy - bounce, 4, ppx, ppy - bounce, 34);
+        haloG.addColorStop(0, 'rgba(74,222,128,0.22)'); haloG.addColorStop(1, 'rgba(74,222,128,0)');
+        ctx.beginPath(); ctx.arc(ppx, ppy - bounce, 34, 0, Math.PI * 2);
+        ctx.fillStyle = haloG; ctx.fill();
+        ['🍃','🌿','🍀'].forEach((leaf, i) => {
+          const a = (i / 3) * Math.PI * 2 + now * 0.7;
+          const lx = ppx + Math.cos(a) * 26, ly = ppy - bounce + Math.sin(a) * 13;
+          ctx.save(); ctx.globalAlpha = 0.8; ctx.font = '12px serif';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(leaf, lx, ly); ctx.restore();
+        });
+      } else if (aura === 'void') {
+        // Dark purple shadow wisps
+        for (let i = 0; i < 5; i++) {
+          const a = (i / 5) * Math.PI * 2 + now * 0.6;
+          const r = 22 + Math.sin(now * 2 + i) * 6;
+          const wx = ppx + Math.cos(a) * r, wy = ppy - bounce + Math.sin(a) * r * 0.5;
+          const wg = ctx.createRadialGradient(wx, wy, 0, wx, wy, 10);
+          wg.addColorStop(0, 'rgba(88,28,135,0.55)'); wg.addColorStop(1, 'rgba(88,28,135,0)');
+          ctx.beginPath(); ctx.arc(wx, wy, 10, 0, Math.PI * 2);
+          ctx.fillStyle = wg; ctx.fill();
+        }
+        ctx.save(); ctx.globalAlpha = 0.25 + 0.1 * Math.sin(now * 2);
+        const vg = ctx.createRadialGradient(ppx, ppy - bounce, 5, ppx, ppy - bounce, 32);
+        vg.addColorStop(0, 'rgba(88,28,135,0.4)'); vg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = vg; ctx.beginPath(); ctx.arc(ppx, ppy - bounce, 32, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      } else if (aura === 'fire') {
+        // Orange flame licks
+        for (let i = 0; i < 7; i++) {
+          const prog = ((now * 1.8 + i * 0.25) % 1);
+          const a = (i / 7) * Math.PI * 2;
+          const fx = ppx + Math.cos(a) * 18 * (1 - prog * 0.5);
+          const fy2 = ppy - bounce - prog * 22;
+          ctx.save(); ctx.globalAlpha = (1 - prog) * 0.7;
+          ctx.fillStyle = prog < 0.4 ? '#f97316' : '#fbbf24';
+          ctx.shadowColor = '#f97316'; ctx.shadowBlur = 12;
+          ctx.beginPath(); ctx.arc(fx, fy2, 4 * (1 - prog), 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+      } else if (aura === 'phantom') {
+        // Ghostly shimmering outline
+        ctx.save(); ctx.globalAlpha = 0.15 + 0.1 * Math.sin(now * 2.5);
+        ctx.shadowColor = '#e2e8f0'; ctx.shadowBlur = 20;
+        ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(ppx, ppy - bounce, 20, 28, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      } else if (aura === 'ocean') {
+        // Rippling blue rings
+        for (let i = 0; i < 3; i++) {
+          const prog = ((now * 0.8 + i * 0.33) % 1);
+          const r = prog * 38;
+          ctx.save(); ctx.globalAlpha = (1 - prog) * 0.45;
+          ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2; ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 6;
+          ctx.beginPath(); ctx.ellipse(ppx, ppy - bounce + 6, r, r * 0.4, 0, 0, Math.PI * 2); ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+
+    // Soft halo behind item icon
     const haloGrad = ctx.createRadialGradient(ppx, fy, 2, ppx, fy, 18);
-    haloGrad.addColorStop(0, 'rgba(167,139,250,0.35)');
-    haloGrad.addColorStop(1, 'rgba(167,139,250,0)');
-    ctx.beginPath(); ctx.arc(ppx, fy, 18, 0, Math.PI*2);
+    const haloCol = equipped.legendary ? (equipped.tierColor || '#ffd700') : '#a78bfa';
+    haloGrad.addColorStop(0, haloCol + '55'); haloGrad.addColorStop(1, haloCol + '00');
+    ctx.beginPath(); ctx.arc(ppx, fy, 18, 0, Math.PI * 2);
     ctx.fillStyle = haloGrad; ctx.fill();
+
     // Item icon
-    ctx.save();
-    ctx.globalAlpha = itemPulse;
-    ctx.shadowColor = '#a78bfa'; ctx.shadowBlur = 12;
+    ctx.save(); ctx.globalAlpha = itemPulse;
+    ctx.shadowColor = haloCol; ctx.shadowBlur = equipped.legendary ? 18 : 12;
     ctx.font = '18px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(equipped.icon, ppx, fy);
     ctx.shadowBlur = 0; ctx.restore();
@@ -2529,22 +2782,34 @@ function renderInventory() {
           ${btnHtml}
         </div>`;
 
-      // ── KEEPSAKE ITEM (equippable) ───────────────────
+      // ── KEEPSAKE / LEGENDARY ITEM (equippable) ──────────
       } else {
-        const cardBorder = isEquipped ? 'rgba(167,139,250,0.5)' : 'rgba(255,255,255,0.1)';
-        const cardBg     = isEquipped ? 'rgba(167,139,250,0.1)' : 'rgba(255,255,255,0.04)';
+        const isLegendary = !!c.legendary;
+        const borderCol = isLegendary
+          ? (isEquipped ? c.tierColor : c.tierColor + '55')
+          : (isEquipped ? 'rgba(167,139,250,0.5)' : 'rgba(255,255,255,0.1)');
+        const bgCol = isLegendary
+          ? (isEquipped ? c.tierColor + '18' : c.tierColor + '09')
+          : (isEquipped ? 'rgba(167,139,250,0.1)' : 'rgba(255,255,255,0.04)');
+        const glowShadow = isLegendary && isEquipped
+          ? `box-shadow:0 0 18px ${c.tierColor}44;`
+          : isEquipped ? 'box-shadow:0 0 12px rgba(167,139,250,0.15);' : '';
+
+        const tierBadge = isLegendary
+          ? `<span style="font-size:8px;font-weight:700;color:${c.tierColor};background:${c.tierColor}22;border:1px solid ${c.tierColor}44;padding:1px 5px;border-radius:6px;letter-spacing:0.06em">${c.tier}</span>`
+          : '';
         const equippedTag = isEquipped
-          ? `<span style="font-size:9px;color:rgba(167,139,250,0.9)">● Equipped</span>`
+          ? `<span style="font-size:9px;color:${isLegendary ? c.tierColor : 'rgba(167,139,250,0.9)'}">● Equipped${isLegendary ? ' · ' + c.aura + ' aura' : ''}</span>`
           : `<span style="font-size:9px;color:rgba(255,255,255,0.28)">Not equipped</span>`;
         const equipBtn = isEquipped
-          ? `<button onclick="equipItem(${idx})" style="padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.4);color:rgb(167,139,250);cursor:pointer;white-space:nowrap;">Unequip</button>`
+          ? `<button onclick="equipItem(${idx})" style="padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;background:${isLegendary?c.tierColor+'28':'rgba(167,139,250,0.15)'};border:1px solid ${isLegendary?c.tierColor+'66':'rgba(167,139,250,0.4)'};color:${isLegendary?c.tierColor:'rgb(167,139,250)'};cursor:pointer;white-space:nowrap;">Unequip</button>`
           : `<button onclick="equipItem(${idx})" style="padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.7);cursor:pointer;white-space:nowrap;">Equip</button>`;
 
-        html += `<div style="display:flex;align-items:center;gap:9px;background:${cardBg};border:1px solid ${cardBorder};border-radius:10px;padding:9px 10px;margin-bottom:6px;${isEquipped?'box-shadow:0 0 12px rgba(167,139,250,0.15)':''}">
-          <span style="font-size:24px;line-height:1;${isEquipped?'filter:drop-shadow(0 0 6px rgba(167,139,250,0.8))':''}">${c.icon}</span>
+        html += `<div style="display:flex;align-items:center;gap:9px;background:${bgCol};border:1px solid ${borderCol};border-radius:10px;padding:9px 10px;margin-bottom:6px;${glowShadow}">
+          <span style="font-size:24px;line-height:1;${isEquipped?`filter:drop-shadow(0 0 8px ${isLegendary?c.tierColor:'rgba(167,139,250,0.8)'})`:''}">${c.icon}</span>
           <div style="flex:1;min-width:0">
-            <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.85)">${c.name}</div>
-            <div style="margin-top:2px">${equippedTag}</div>
+            <div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">${tierBadge}<span style="font-size:11px;font-weight:${isLegendary?700:500};color:rgba(255,255,255,${isLegendary?1:0.85})">${c.name}</span></div>
+            <div>${equippedTag}</div>
           </div>
           ${equipBtn}
         </div>`;
@@ -2655,12 +2920,16 @@ function craftRecipe(recipeId) {
 // Toggle the light/fog effect on or off for this visit
 function toggleLight(idx) {
   const item = state.crafted[idx];
-  if (!item || !item.effect) return;
+  console.log('[toggleLight] idx:', idx, 'item:', item);
+  console.log('[toggleLight] world.id:', currentWorld().id, 'forWorldId:', item?.forWorldId);
+  console.log('[toggleLight] goal:', getCurrentGoal());
+  console.log('[toggleLight] getWorldEffect():', getWorldEffect());
+  if (!item || !item.effect) { console.log('[toggleLight] BAIL: no effect'); return; }
   const world = currentWorld();
   const goal = getCurrentGoal();
-  if (!goal) return;
-  if (item.forWorldId !== world.id) return;
-  if (item.effect !== goal.unlocks) return;
+  if (!goal) { console.log('[toggleLight] BAIL: no goal'); return; }
+  if (item.forWorldId !== world.id) { console.log('[toggleLight] BAIL: wrong world', item.forWorldId, '!==', world.id); return; }
+  if (item.effect !== goal.unlocks) { console.log('[toggleLight] BAIL: wrong effect', item.effect, '!==', goal.unlocks); return; }
 
   const wid = world.id;
   // effect is null = light is ON (cleared). effect = 'light'/'fog' = light is OFF (active)
@@ -2698,6 +2967,75 @@ function equipItem(idx) {
     showToast(`${item.icon} ${item.name} equipped!`);
   }
   renderInventory();
+  scheduleSave();
+}
+
+// ═══════════════════════════════════════════════════════
+// LEGENDARY CRAFTING
+// ═══════════════════════════════════════════════════════
+function renderLegendary() {
+  const el = document.getElementById('tab-legendary');
+  if (!el) return;
+  let html = '<div class="section-label">Legendary Crafts</div>';
+  html += '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:10px;line-height:1.5;">Rare items requiring resources from multiple worlds. Grants special auras when equipped.</div>';
+
+  LEGENDARY_RECIPES.forEach(recipe => {
+    const ings = recipe.ingredients;
+    let have = 0, total = 0;
+    Object.entries(ings).forEach(([id, amt]) => {
+      total += amt;
+      have += Math.min(state.inventory[id] || 0, amt);
+    });
+    const pct = total > 0 ? Math.round(have / total * 100) : 0;
+    const canCraft = have === total;
+    const tierClass = 'tier-' + recipe.tier.toLowerCase();
+    const tierCol = recipe.tierColor;
+
+    html += `<div class="leg-card ${tierClass}${canCraft ? ' craftable' : ''}">`;
+    html += `<span class="leg-tier-badge" style="background:${tierCol}22;color:${tierCol};border:1px solid ${tierCol}44">${recipe.tier}</span>`;
+    html += `<div class="leg-header"><span class="leg-icon">${recipe.icon}</span><span class="leg-name">${recipe.name}</span></div>`;
+    html += `<div class="leg-desc">${recipe.desc}</div>`;
+    html += `<div class="leg-ingredients">`;
+    Object.entries(ings).forEach(([id, amt]) => {
+      const res = LEGENDARY_RES_LOOKUP[id] || resLookup[id];
+      const playerHas = (state.inventory[id] || 0) >= amt;
+      html += `<span class="leg-ing${playerHas ? ' have' : ''}">${res ? res.icon : '?'} ${res ? res.name : id} ×${amt}</span>`;
+    });
+    html += `</div>`;
+    html += `<div class="leg-progress-wrap"><div class="leg-progress-bar" style="width:${pct}%;background:${tierCol}"></div></div>`;
+    html += `<div style="font-size:9px;color:rgba(255,255,255,0.3);margin-bottom:6px">${have}/${total} ingredients · ${pct}%</div>`;
+    if (canCraft) {
+      html += `<button class="leg-craft-btn can" onclick="craftLegendary('${recipe.id}')">✨ Craft ${recipe.name}</button>`;
+    } else {
+      html += `<button class="leg-craft-btn cannot" disabled>Collect more ingredients</button>`;
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function craftLegendary(recipeId) {
+  lastCraftTime = Date.now();
+  const recipe = LEGENDARY_RECIPES.find(r => r.id === recipeId);
+  if (!recipe) return;
+  const canCraft = Object.entries(recipe.ingredients).every(([id, amt]) => (state.inventory[id] || 0) >= amt);
+  if (!canCraft) return;
+  Object.entries(recipe.ingredients).forEach(([id, amt]) => { state.inventory[id] -= amt; });
+  state.crafted.push({
+    id:          recipe.result.id,
+    name:        recipe.result.name,
+    icon:        recipe.result.icon,
+    effect:      null,
+    forWorldId:  null,   // legendary items work everywhere
+    forWorldName:null,
+    legendary:   true,
+    aura:        recipe.aura,
+    tier:        recipe.tier,
+    tierColor:   recipe.tierColor,
+  });
+  showToast(`✨ ${recipe.icon} ${recipe.name} crafted! Legendary item added to your bag!`);
+  renderInventory();
+  renderLegendary();
   scheduleSave();
 }
 
@@ -2791,6 +3129,7 @@ document.querySelectorAll('.panel-tab').forEach(btn=>{
     document.querySelectorAll('.panel-content').forEach(c=>c.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'legendary') renderLegendary();
   });
 });
 
