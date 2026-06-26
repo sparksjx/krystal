@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>World Hopper — Explore Infinite Dimensions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & BASE ─────────────────────────────────────── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --void:       #06040f;
+  --deep:       #0d0820;
+  --surface:    #120d28;
+  --panel:      #1a1435;
+  --green:      #7ec850;
+  --purple:     #a78bfa;
+  --blue:       #38bdf8;
+  --orange:     #fb923c;
+  --pink:       #f472b6;
+  --gold:       #fbbf24;
+  --text:       #f0eeff;
+  --muted:      rgba(240,238,255,0.5);
+  --faint:      rgba(240,238,255,0.15);
+}
+html { scroll-behavior:smooth; }
+body {
+  background: var(--void);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ── STAR FIELD ───────────────────────────────────────── */
+#stars {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  overflow: hidden;
+}
+.star {
+  position: absolute; border-radius: 50%; background: #fff;
+  animation: twinkle var(--dur, 3s) ease-in-out infinite var(--delay, 0s);
+}
+@keyframes twinkle {
+  0%,100% { opacity: var(--lo, 0.1); transform: scale(1); }
+  50%      { opacity: var(--hi, 0.7); transform: scale(1.3); }
+}
+
+/* ── NAV ──────────────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 18px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(to bottom, rgba(6,4,15,0.95), transparent);
+  backdrop-filter: blur(6px);
+}
+.nav-logo {
+  font-family: 'Cinzel', serif;
+  font-size: 20px; font-weight: 700; letter-spacing: 0.04em;
+  color: var(--text);
+  display: flex; align-items: center; gap: 10px;
+}
+.nav-logo span { color: var(--green); }
+.nav-links { display: flex; gap: 32px; }
+.nav-links a {
+  color: var(--muted); text-decoration: none; font-size: 14px;
+  font-weight: 500; letter-spacing: 0.02em;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--text); }
+.nav-play {
+  background: var(--green); color: #0a1a04; border: none;
+  padding: 9px 22px; border-radius: 24px;
+  font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700;
+  letter-spacing: 0.06em; cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 0 20px rgba(126,200,80,0.3);
+}
+.nav-play:hover { transform: scale(1.04); box-shadow: 0 0 30px rgba(126,200,80,0.5); }
+
+/* ── HERO ─────────────────────────────────────────────── */
+#hero {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 100px 24px 60px;
+  text-align: center;
+}
+.hero-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--purple);
+  margin-bottom: 20px;
+}
+.hero-title {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(48px, 8vw, 96px);
+  font-weight: 900; line-height: 1.0;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, #fff 0%, var(--purple) 45%, var(--blue) 75%, var(--green) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 24px;
+}
+.hero-sub {
+  font-size: clamp(16px, 2.5vw, 20px); color: var(--muted);
+  max-width: 560px; margin: 0 auto 48px;
+  font-weight: 300; line-height: 1.7;
+}
+.hero-cta-row {
+  display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+  margin-bottom: 72px;
+}
+.btn-primary {
+  background: var(--green); color: #071202; border: none;
+  padding: 14px 36px; border-radius: 32px;
+  font-family: 'Cinzel', serif; font-size: 15px; font-weight: 700;
+  letter-spacing: 0.08em; cursor: pointer;
+  box-shadow: 0 0 40px rgba(126,200,80,0.4);
+  transition: all 0.2s;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 60px rgba(126,200,80,0.6); }
+.btn-secondary {
+  background: transparent; color: var(--text);
+  border: 1px solid var(--faint);
+  padding: 14px 36px; border-radius: 32px;
+  font-family: 'Cinzel', serif; font-size: 15px; font-weight: 600;
+  letter-spacing: 0.06em; cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-secondary:hover { border-color: var(--purple); color: var(--purple); }
+
+/* World badges strip */
+.world-badges {
+  display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+  margin-bottom: 80px;
+}
+.world-badge {
+  padding: 6px 16px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+  border: 1px solid; opacity: 0.85;
+}
+
+/* ── PORTAL FRAME (signature element) ─────────────────── */
+#game-section {
+  position: relative; z-index: 1;
+  padding: 0 24px 120px;
+  display: flex; flex-direction: column; align-items: center;
+}
+.portal-label {
+  font-family: 'Cinzel', serif; font-size: 11px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--purple); margin-bottom: 24px;
+}
+.portal-frame-wrap {
+  position: relative; width: 100%; max-width: 1060px;
+}
+
+/* The living aurora rift behind the game */
+.portal-aurora {
+  position: absolute;
+  inset: -28px;
+  border-radius: 24px;
+  background: conic-gradient(
+    from 0deg,
+    rgba(126,200,80,0.25),
+    rgba(167,139,250,0.35),
+    rgba(56,189,248,0.28),
+    rgba(251,146,60,0.20),
+    rgba(244,114,182,0.22),
+    rgba(126,200,80,0.25)
+  );
+  animation: riftspin 8s linear infinite;
+  filter: blur(20px);
+  z-index: -1;
+}
+@keyframes riftspin {
+  to { transform: rotate(360deg); }
+}
+.portal-frame-inner {
+  border-radius: 16px; overflow: hidden;
+  border: 1px solid rgba(167,139,250,0.3);
+  box-shadow:
+    0 0 0 1px rgba(126,200,80,0.1),
+    0 40px 80px rgba(0,0,0,0.8);
+  position: relative; background: #06040f;
+}
+.portal-frame-inner iframe {
+  width: 100%; height: 640px; border: none; display: block;
+}
+
+/* Top bar of portal frame */
+.portal-bar-top {
+  background: rgba(13,8,32,0.9);
+  border-bottom: 1px solid rgba(167,139,250,0.15);
+  padding: 10px 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.portal-dots { display: flex; gap: 7px; }
+.portal-dot {
+  width: 11px; height: 11px; border-radius: 50%;
+}
+.portal-dot.red   { background: #ff5f57; }
+.portal-dot.yel   { background: #ffbd2e; }
+.portal-dot.grn   { background: #28c840; }
+.portal-url {
+  flex: 1; background: rgba(255,255,255,0.05); border-radius: 6px;
+  padding: 4px 12px; font-size: 11px; color: var(--muted);
+  font-family: 'Inter', monospace;
+}
+.portal-live {
+  font-size: 10px; font-weight: 600; color: var(--green);
+  display: flex; align-items: center; gap: 5px; letter-spacing: 0.05em;
+}
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+/* Fullscreen button */
+.fs-btn {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px; padding: 4px 10px;
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; gap: 5px; letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.fs-btn:hover { background: rgba(167,139,250,0.15); border-color: var(--purple); color: var(--text); }
+
+/* Fullscreen overlay — covers the whole screen */
+#fs-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9999;
+  background: #06040f; flex-direction: column;
+}
+#fs-overlay.active { display: flex; }
+#fs-iframe-slot {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+}
+#fs-topbar {
+  background: rgba(13,8,32,0.95);
+  border-bottom: 1px solid rgba(167,139,250,0.2);
+  padding: 8px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+#fs-title {
+  font-family: 'Cinzel', serif; font-size: 13px; font-weight: 600;
+  color: var(--muted); display: flex; align-items: center; gap: 8px;
+}
+#fs-close {
+  background: rgba(255,80,80,0.12); border: 1px solid rgba(255,80,80,0.25);
+  border-radius: 6px; padding: 5px 14px;
+  font-size: 12px; font-weight: 600; color: rgba(255,140,140,0.9);
+  cursor: pointer; transition: all 0.15s; letter-spacing: 0.03em;
+}
+#fs-close:hover { background: rgba(255,80,80,0.25); color: #fff; }
+
+/* ── FEATURES ─────────────────────────────────────────── */
+#features {
+  position: relative; z-index: 1;
+  padding: 80px 24px 100px;
+  max-width: 1100px; margin: 0 auto;
+}
+.section-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted);
+  text-align: center; margin-bottom: 16px;
+}
+.section-title {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(28px, 4vw, 44px); font-weight: 700;
+  text-align: center; margin-bottom: 64px;
+  color: var(--text);
+}
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+.feature-card {
+  background: var(--surface);
+  border: 1px solid var(--faint);
+  border-radius: 16px; padding: 28px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.feature-card:hover {
+  border-color: rgba(167,139,250,0.3);
+  transform: translateY(-3px);
+}
+.feature-icon {
+  font-size: 32px; margin-bottom: 16px; display: block;
+}
+.feature-name {
+  font-family: 'Cinzel', serif;
+  font-size: 15px; font-weight: 600;
+  margin-bottom: 10px; color: var(--text);
+}
+.feature-desc {
+  font-size: 13px; color: var(--muted); line-height: 1.7;
+}
+.feature-accent { color: var(--purple); font-weight: 500; }
+
+/* ── WORLDS SHOWCASE ──────────────────────────────────── */
+#worlds {
+  position: relative; z-index: 1;
+  padding: 80px 24px 100px;
+  background: linear-gradient(to bottom, transparent, var(--deep) 30%, var(--deep) 70%, transparent);
+}
+.worlds-inner { max-width: 1100px; margin: 0 auto; }
+.worlds-scroll {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px; margin-top: 48px;
+}
+.world-card {
+  border-radius: 14px; padding: 20px;
+  border: 1px solid var(--faint);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: default;
+}
+.world-card:hover { transform: translateY(-4px); }
+.world-card-icon { font-size: 28px; margin-bottom: 10px; display: block; }
+.world-card-name {
+  font-family: 'Cinzel', serif;
+  font-size: 13px; font-weight: 600; margin-bottom: 6px;
+}
+.world-card-desc { font-size: 11px; color: var(--muted); line-height: 1.6; }
+.world-card-badge {
+  display: inline-block; margin-top: 10px;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 8px;
+}
+
+/* ── HOW TO PLAY ──────────────────────────────────────── */
+#howto {
+  position: relative; z-index: 1;
+  padding: 80px 24px 100px;
+  max-width: 860px; margin: 0 auto;
+}
+.steps { display: flex; flex-direction: column; gap: 0; margin-top: 48px; }
+.step {
+  display: grid; grid-template-columns: 56px 1fr;
+  gap: 24px; padding: 28px 0;
+  border-bottom: 1px solid var(--faint);
+}
+.step:last-child { border-bottom: none; }
+.step-num {
+  font-family: 'Cinzel', serif;
+  font-size: 32px; font-weight: 900; line-height: 1;
+  color: var(--purple); opacity: 0.5;
+  align-self: start; padding-top: 4px;
+}
+.step-title {
+  font-family: 'Cinzel', serif;
+  font-size: 17px; font-weight: 600;
+  margin-bottom: 8px; color: var(--text);
+}
+.step-body { font-size: 14px; color: var(--muted); line-height: 1.75; }
+.key {
+  display: inline-block;
+  background: var(--panel); border: 1px solid var(--faint);
+  border-radius: 5px; padding: 1px 7px;
+  font-family: monospace; font-size: 12px; color: var(--text);
+}
+
+/* ── FOOTER ───────────────────────────────────────────── */
+footer {
+  position: relative; z-index: 1;
+  padding: 40px 40px;
+  border-top: 1px solid var(--faint);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+}
+.footer-logo {
+  font-family: 'Cinzel', serif; font-size: 15px; font-weight: 700;
+  color: var(--muted);
+}
+.footer-logo span { color: var(--green); }
+.footer-note { font-size: 12px; color: var(--faint); }
+
+/* ── DIVIDER ──────────────────────────────────────────── */
+.rift-divider {
+  height: 1px; width: 100%;
+  background: linear-gradient(to right, transparent, var(--purple), transparent);
+  opacity: 0.3; margin: 0 auto;
+}
+
+/* ── RESPONSIVE ───────────────────────────────────────── */
+@media (max-width: 700px) {
+  nav { padding: 14px 20px; }
+  .nav-links { display: none; }
+  .portal-frame-inner iframe { height: 480px; }
+  footer { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── STAR FIELD ── -->
+<div id="stars"></div>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-logo">🌀 <span>World</span>Hopper</div>
+  <div class="nav-links">
+    <a href="#game-section">Play</a>
+    <a href="#features">Features</a>
+    <a href="#worlds">Worlds</a>
+    <a href="#howto">How to Play</a>
+  </div>
+  <button class="nav-play" onclick="document.getElementById('game-section').scrollIntoView({behavior:'smooth'})">Play Now</button>
+</nav>
+
+<!-- ── HERO ── -->
+<section id="hero">
+  <p class="hero-eyebrow">A Browser-Based Exploration Game</p>
+  <h1 class="hero-title">World<br>Hopper</h1>
+  <p class="hero-sub">Explore infinite dimensions. Collect rare resources. Craft portal keys. Every world is unique — some shrouded in darkness, some lost in fog. Light the way forward.</p>
+  <div class="hero-cta-row">
+    <button class="btn-primary" onclick="document.getElementById('game-section').scrollIntoView({behavior:'smooth'})">▶ Play Now — Free</button>
+    <button class="btn-secondary" onclick="document.getElementById('howto').scrollIntoView({behavior:'smooth'})">How to Play</button>
+  </div>
+  <div class="world-badges">
+    <div class="world-badge" style="color:#7ec850;border-color:rgba(126,200,80,0.3);background:rgba(126,200,80,0.07)">🌸 Sunlit Meadow</div>
+    <div class="world-badge" style="color:#a78bfa;border-color:rgba(167,139,250,0.3);background:rgba(167,139,250,0.07)">💎 Crystal Caverns</div>
+    <div class="world-badge" style="color:#38bdf8;border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.07)">🐚 Tropical Shore</div>
+    <div class="world-badge" style="color:#fb923c;border-color:rgba(251,146,60,0.3);background:rgba(251,146,60,0.07)">🍂 Autumn Forest</div>
+    <div class="world-badge" style="color:#7dd3fc;border-color:rgba(125,211,252,0.3);background:rgba(125,211,252,0.07)">☁️ Sky Islands</div>
+    <div class="world-badge" style="color:#f97316;border-color:rgba(249,115,22,0.3);background:rgba(249,115,22,0.07)">🌋 Volcanic Caldera</div>
+    <div class="world-badge" style="color:#bae6fd;border-color:rgba(186,230,253,0.3);background:rgba(186,230,253,0.07)">❄️ Frozen Tundra</div>
+    <div class="world-badge" style="color:#e879f9;border-color:rgba(232,121,249,0.3);background:rgba(232,121,249,0.07)">🍄 Mycelium Realm</div>
+    <div class="world-badge" style="color:rgba(255,255,255,0.4);border-color:rgba(255,255,255,0.1);background:rgba(255,255,255,0.04)">🌀 ∞ Procedural Dimensions</div>
+  </div>
+</section>
+
+<!-- ── FULLSCREEN OVERLAY ── -->
+<div id="fs-overlay">
+  <div id="fs-topbar">
+    <div id="fs-title">🌀 <span style="color:var(--green)">World</span>Hopper <span style="opacity:0.4;font-size:10px;margin-left:4px">· Fullscreen</span></div>
+    <button id="fs-close" onclick="closeFullscreen()">✕ Exit Fullscreen</button>
+  </div>
+  <!-- iframe moves here when fullscreen is active -->
+  <div id="fs-iframe-slot" style="flex:1;display:flex;flex-direction:column;"></div>
+</div>
+
+<!-- ── GAME ── -->
+<section id="game-section">
+  <p class="portal-label">— Live Game —</p>
+  <div class="portal-frame-wrap">
+    <div class="portal-aurora"></div>
+    <div class="portal-frame-inner">
+      <div class="portal-bar-top">
+        <div class="portal-dots">
+          <div class="portal-dot red"></div>
+          <div class="portal-dot yel"></div>
+          <div class="portal-dot grn"></div>
+        </div>
+        <div class="portal-url">world-hopper.game / play</div>
+        <div class="portal-live"><div class="live-dot"></div>LIVE</div>
+        <button class="fs-btn" onclick="openFullscreen()">⛶ Fullscreen</button>
+      </div>
+      <!-- Single iframe — shared between normal and fullscreen view -->
+      <div id="normal-iframe-slot">
+        <iframe id="game-iframe" src="game.html" title="World Hopper Game"
+          style="width:100%;height:640px;border:none;display:block;" allowfullscreen></iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<div class="rift-divider"></div>
+<section id="features">
+  <p class="section-eyebrow">What's inside</p>
+  <h2 class="section-title">Everything You Need to Explore</h2>
+  <div class="features-grid">
+
+    <div class="feature-card">
+      <span class="feature-icon">🌍</span>
+      <div class="feature-name">Infinite Worlds</div>
+      <div class="feature-desc">8 hand-crafted dimensions plus <span class="feature-accent">endless procedurally generated hybrids</span> beyond dimension 9 — every one seeded and consistent.</div>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-icon">🗺️</span>
+      <div class="feature-name">Infinite Maps</div>
+      <div class="feature-desc">Each world stretches in every direction forever. Walk north, south, east, west — terrain generates around you as you explore.</div>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-icon">⚗️</span>
+      <div class="feature-name">Deep Crafting</div>
+      <div class="feature-desc">Collect world-specific resources and combine them into <span class="feature-accent">portal keys, lanterns, lenses, keepsakes</span>, and more. Every world has its own recipe list.</div>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-icon">🕯️</span>
+      <div class="feature-name">Light & Fog Challenges</div>
+      <div class="feature-desc">Some worlds are pitch dark. Some are lost in fog. Craft the right item to clear the way — then carry it in your bag for future visits.</div>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-icon">🧝</span>
+      <div class="feature-name">Custom Character</div>
+      <div class="feature-desc">Design your explorer: <span class="feature-accent">20 outfit styles</span>, 15 hair styles, 23 hair colours, 15 eye types, 21 accessories, and full colour control.</div>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-icon">💾</span>
+      <div class="feature-name">Auto-Save</div>
+      <div class="feature-desc">Your progress, inventory, character, and discovered dimensions save automatically to your browser. Pick up exactly where you left off.</div>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-icon">🎵</span>
+      <div class="feature-name">Generative Music</div>
+      <div class="feature-desc">Each dimension plays unique ambient music generated live in your browser — chord progressions, melody, bass, and rhythm tuned to the world's mood.</div>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-icon">✨</span>
+      <div class="feature-name">Portal Particles</div>
+      <div class="feature-desc">Every dimension hop triggers a burst of 200 particles in the destination world's colours — circles, stars, and spiral swirls.</div>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-icon">📖</span>
+      <div class="feature-name">Dimension Codex</div>
+      <div class="feature-desc">Track every world you've discovered. Travel back to any visited dimension instantly from the Worlds panel — no portal key required.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── WORLDS ── -->
+<div class="rift-divider"></div>
+<section id="worlds">
+  <div class="worlds-inner">
+    <p class="section-eyebrow">8 base dimensions + infinite beyond</p>
+    <h2 class="section-title">The Worlds Await</h2>
+    <div class="worlds-scroll">
+
+      <div class="world-card" style="background:linear-gradient(135deg,rgba(74,142,42,0.15),rgba(13,8,32,0.8));border-color:rgba(126,200,80,0.2)">
+        <span class="world-card-icon">🌸</span>
+        <div class="world-card-name" style="color:#7ec850">Sunlit Meadow</div>
+        <div class="world-card-desc">A warm golden meadow. Your journey begins here under open skies.</div>
+        <span class="world-card-badge" style="background:rgba(126,200,80,0.12);color:#7ec850">W1 · Clear</span>
+      </div>
+
+      <div class="world-card" style="background:linear-gradient(135deg,rgba(109,40,217,0.15),rgba(13,8,32,0.8));border-color:rgba(167,139,250,0.2)">
+        <span class="world-card-icon">💎</span>
+        <div class="world-card-name" style="color:#a78bfa">Crystal Caverns</div>
+        <div class="world-card-desc">Glittering underground chambers. Pitch dark until you craft a lamp.</div>
+        <span class="world-card-badge" style="background:rgba(167,139,250,0.12);color:#a78bfa">W2 · 🕯️ Darkness</span>
+      </div>
+
+      <div class="world-card" style="background:linear-gradient(135deg,rgba(2,132,199,0.15),rgba(13,8,32,0.8));border-color:rgba(56,189,248,0.2)">
+        <span class="world-card-icon">🐚</span>
+        <div class="world-card-name" style="color:#38bdf8">Tropical Shore</div>
+        <div class="world-card-desc">Warm sands and turquoise waters. Lost in sea fog on arrival.</div>
+        <span class="world-card-badge" style="background:rgba(56,189,248,0.12);color:#38bdf8">W3 · 🌫️ Fog</span>
+      </div>
+
+      <div class="world-card" style="background:linear-gradient(135deg,rgba(194,65,12,0.15),rgba(13,8,32,0.8));border-color:rgba(251,146,60,0.2)">
+        <span class="world-card-icon">🍂</span>
+        <div class="world-card-name" style="color:#fb923c">Autumn Forest</div>
+        <div class="world-card-desc">A forest ablaze with amber. Dark until a lantern lights the way.</div>
+        <span class="world-card-badge" style="background:rgba(251,146,60,0.12);color:#fb923c">W4 · 🕯️ Darkness</span>
+      </div>
+
+      <div class="world-card" style="background:linear-gradient(135deg,rgba(3,105,161,0.15),rgba(13,8,32,0.8));border-color:rgba(125,211,252,0.2)">
+        <span class="world-card-icon">☁️</span>
+        <div class="world-card-name" style="color:#7dd3fc">Sky Islands</div>
+        <div class="world-card-desc">Floating islands among clouds. Storm veils all until cleared.</div>
+        <span class="world-card-badge" style="background:rgba(125,211,252,0.12);color:#7dd3fc">W5 · 🌫️ Fog</span>
+      </div>
+
+      <div class="world-card" style="background:linear-gradient(135deg,rgba(154,52,18,0.15),rgba(13,8,32,0.8));border-color:rgba(249,115,22,0.2)">
+        <span class="world-card-icon">🌋</span>
+        <div class="world-card-name" style="color:#f97316">Volcanic Caldera</div>
+        <div class="world-card-desc">Lava pools and obsidian spires. Toxic ash shrouds the land.</div>
+        <span class="world-card-badge" style="background:rgba(249,115,22,0.12);color:#f97316">W6 · 🌫️ Fog</span>
+      </div>
+
+      <div class="world-card" style="background:linear-gradient(135deg,rgba(12,74,110,0.15),rgba(13,8,32,0.8));border-color:rgba(186,230,253,0.2)">
+        <span class="world-card-icon">❄️</span>
+        <div class="world-card-name" style="color:#bae6fd">Frozen Tundra</div>
+        <div class="world-card-desc">An endless frozen expanse. Blizzard blinds you until calmed.</div>
+        <span class="world-card-badge" style="background:rgba(186,230,253,0.12);color:#bae6fd">W7 · 🌫️ Fog</span>
+      </div>
+
+      <div class="world-card" style="background:linear-gradient(135deg,rgba(134,25,143,0.15),rgba(13,8,32,0.8));border-color:rgba(232,121,249,0.2)">
+        <span class="world-card-icon">🍄</span>
+        <div class="world-card-name" style="color:#e879f9">Mycelium Realm</div>
+        <div class="world-card-desc">Bioluminescent wonderland. Spores cloud the air until cleared.</div>
+        <span class="world-card-badge" style="background:rgba(232,121,249,0.12);color:#e879f9">W8 · 🕯️ Darkness</span>
+      </div>
+
+      <div class="world-card" style="background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(13,8,32,0.8));border-color:rgba(255,255,255,0.08)">
+        <span class="world-card-icon">🌀</span>
+        <div class="world-card-name" style="color:rgba(255,255,255,0.5)">∞ Beyond</div>
+        <div class="world-card-desc">Procedural hybrid dimensions — blended, named, seeded. Each one unique to your run.</div>
+        <span class="world-card-badge" style="background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.3)">D9+ · Random</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW TO PLAY ── -->
+<div class="rift-divider"></div>
+<section id="howto">
+  <p class="section-eyebrow">Getting started</p>
+  <h2 class="section-title">How to Play</h2>
+  <div class="steps">
+
+    <div class="step">
+      <div class="step-num">01</div>
+      <div>
+        <div class="step-title">Move your explorer</div>
+        <div class="step-body">Use <span class="key">W A S D</span> or the <span class="key">↑ ↓ ← →</span> arrow keys to walk around. Walk directly over glowing bobbing items to collect them — no button needed.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">02</div>
+      <div>
+        <div class="step-title">Craft a portal key</div>
+        <div class="step-body">Open the <b>⚗️ Craft</b> tab on the right panel. Each world has a unique portal key recipe. Collect enough resources, hit <b>Craft Portal Key</b>, then press <span class="key">Space</span> to leap to the next dimension.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">03</div>
+      <div>
+        <div class="step-title">Light the dark worlds</div>
+        <div class="step-body">Some worlds are pitch dark or wrapped in fog on arrival. Check your <b>🎒 Bag</b> — if you've crafted a lantern or lens before, hit <b>Use ✨</b> to clear the effect instantly. Otherwise craft one first.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">04</div>
+      <div>
+        <div class="step-title">Customise your character</div>
+        <div class="step-body">Click <b>🧝 Character</b> in the top bar. Choose from 20 outfit styles, 15 hair styles, 23 hair colours, coloured irises, 21 accessories, and trim colours. Your look saves automatically.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">05</div>
+      <div>
+        <div class="step-title">Revisit any world, anytime</div>
+        <div class="step-body">Click <b>🌍 Worlds</b> to open the dimension switcher. Every world you've discovered is listed — tap <b>Travel →</b> to hop back without spending a portal key.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">06</div>
+      <div>
+        <div class="step-title">Keep exploring</div>
+        <div class="step-body">After dimension 8, the worlds never end. Procedural hybrids blend two base worlds together — new names, new palettes, new resources, new music. Some will have darkness or fog too. How far can you go?</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<div class="rift-divider"></div>
+<footer>
+  <div class="footer-logo">🌀 <span>World</span>Hopper</div>
+  <div class="footer-note">Created by <span style="color:var(--purple);font-weight:600">Krystal</span> · Built with love · Runs entirely in your browser · No downloads required</div>
+</footer>
+
+<script>
+// ── Fullscreen — single shared iframe moves between containers ──
+const gameIframe    = document.getElementById('game-iframe');
+const normalSlot    = document.getElementById('normal-iframe-slot');
+const fsSlot        = document.getElementById('fs-iframe-slot');
+const fsOverlay     = document.getElementById('fs-overlay');
+
+// Make the iframe fill its parent slot in either context
+gameIframe.style.cssText = 'width:100%;height:100%;border:none;display:block;flex:1;';
+
+function openFullscreen() {
+  // Move the live iframe (with all its state) into the fullscreen overlay
+  fsSlot.appendChild(gameIframe);
+  fsOverlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  // Try native browser fullscreen
+  if (fsOverlay.requestFullscreen) fsOverlay.requestFullscreen().catch(()=>{});
+  else if (fsOverlay.webkitRequestFullscreen) fsOverlay.webkitRequestFullscreen();
+  gameIframe.focus();
+}
+
+function closeFullscreen() {
+  // Move the iframe back into the normal website slot
+  normalSlot.appendChild(gameIframe);
+  // Restore normal height in the website frame
+  gameIframe.style.height = '640px';
+  fsOverlay.classList.remove('active');
+  document.body.style.overflow = '';
+  if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  else if (document.webkitFullscreenElement) document.webkitExitFullscreen();
+  gameIframe.focus();
+}
+
+// Escape key closes fullscreen overlay
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && fsOverlay.classList.contains('active')) {
+    closeFullscreen();
+  }
+});
+
+// Sync if browser's native fullscreen exits (e.g. user pressed Escape)
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && fsOverlay.classList.contains('active')) {
+    closeFullscreen();
+  }
+});
+
+// ── Star field ──────────────────────────────────────────
+(function() {
+  const container = document.getElementById('stars');
+  const count = 180;
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'star';
+    const size = Math.random() < 0.15 ? (1.5 + Math.random()) : (0.5 + Math.random() * 1.2);
+    const x = Math.random() * 100;
+    const y = Math.random() * 100;
+    const dur = 2.5 + Math.random() * 4;
+    const delay = -(Math.random() * dur);
+    const lo = 0.05 + Math.random() * 0.15;
+    const hi = 0.4 + Math.random() * 0.55;
+    el.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${x}%; top:${y}%;
+      --dur:${dur}s; --delay:${delay}s;
+      --lo:${lo}; --hi:${hi};
+    `;
+    container.appendChild(el);
+  }
+})();
+
+// ── Scroll-reveal on feature/world cards ───────────────
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.feature-card, .world-card, .step').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(24px)';
+  el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+  observer.observe(el);
+});
+</script>
+</body>
+</html>

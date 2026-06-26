@@ -1,0 +1,2817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>World Hopper</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a1a; font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+  #ui-top { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: rgba(10,10,26,0.95); border-bottom: 1px solid rgba(255,255,255,0.08); z-index: 10; flex-shrink: 0; }
+  #world-info { display: flex; align-items: center; gap: 10px; }
+  #world-badge { padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  #world-name { font-size: 14px; color: #fff; font-weight: 500; }
+  #dimension-counter { font-size: 11px; color: rgba(255,255,255,0.35); }
+  #portal-bar { display: flex; align-items: center; gap: 8px; }
+  #portal-label { font-size: 11px; color: rgba(255,255,255,0.4); }
+  #portal-progress-wrap { width: 100px; height: 5px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+  #portal-progress { height: 100%; border-radius: 3px; transition: width 0.3s; }
+  #portal-text { font-size: 11px; color: rgba(255,255,255,0.6); min-width: 90px; text-align: right; }
+  #game-wrap { display: flex; flex: 1; overflow: hidden; }
+  #canvas-area { flex: 1; position: relative; }
+  #gameCanvas { display: block; width: 100%; height: 100%; }
+  #side-panel { width: 255px; background: rgba(10,10,26,0.96); border-left: 1px solid rgba(255,255,255,0.07); display: flex; flex-direction: column; overflow: hidden; }
+  .panel-tab-bar { display: flex; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
+  .panel-tab { flex: 1; padding: 9px 4px; font-size: 11px; color: rgba(255,255,255,0.4); background: transparent; border: none; cursor: pointer; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .panel-tab:hover { color: rgba(255,255,255,0.7); }
+  .panel-tab.active { color: #fff; border-bottom-color: currentColor; }
+  .panel-content { flex: 1; overflow-y: auto; padding: 10px; display: none; }
+  .panel-content.active { display: block; }
+  .panel-content::-webkit-scrollbar { width: 3px; }
+  .panel-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+  .inv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 12px; }
+  .inv-slot { aspect-ratio: 1; border-radius: 7px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+  .inv-slot .item-icon { font-size: 20px; line-height: 1; }
+  .inv-slot .item-count { font-size: 9px; color: rgba(255,255,255,0.5); font-weight: 600; }
+  .inv-slot .item-name { font-size: 8px; color: rgba(255,255,255,0.3); text-align: center; padding: 0 2px; }
+  .craft-recipe { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 9px; padding: 9px; margin-bottom: 7px; }
+  .craft-recipe.craftable { border-color: rgba(100,220,150,0.35); background: rgba(100,220,150,0.05); }
+  .recipe-header { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+  .recipe-icon { font-size: 18px; }
+  .recipe-name { font-size: 12px; color: #fff; font-weight: 500; }
+  .recipe-desc { font-size: 10px; color: rgba(255,255,255,0.4); margin-bottom: 5px; line-height: 1.4; }
+  .recipe-ingredients { display: flex; flex-wrap: wrap; gap: 4px; }
+  .ingredient-tag { font-size: 9px; padding: 2px 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); }
+  .ingredient-tag.have { color: rgba(100,220,150,0.9); border-color: rgba(100,220,150,0.3); }
+  .craft-btn { width: 100%; margin-top: 7px; padding: 5px; border-radius: 5px; font-size: 11px; font-weight: 600; border: none; cursor: pointer; transition: all 0.15s; }
+  .craft-btn.can { background: rgba(100,220,150,0.2); color: rgb(100,220,150); }
+  .craft-btn.can:hover { background: rgba(100,220,150,0.3); }
+  .craft-btn.cannot { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.2); cursor: not-allowed; }
+  .codex-world { border-radius: 9px; padding: 9px; margin-bottom: 7px; border: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.03); }
+  .codex-world-header { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
+  .codex-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .codex-world-name { font-size: 12px; font-weight: 500; color: #fff; }
+  .codex-world-desc { font-size: 10px; color: rgba(255,255,255,0.4); line-height: 1.4; }
+  .codex-resources { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
+  .codex-res-tag { font-size: 9px; padding: 1px 5px; border-radius: 7px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.45); }
+  #minimap-wrap { position: absolute; bottom: 12px; right: 12px; }
+  #minimapCanvas { border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); display: block; }
+  #minimap-label { font-size: 9px; color: rgba(255,255,255,0.25); text-align: center; margin-top: 3px; letter-spacing: 0.04em; }
+  #save-indicator { font-size: 10px; color: rgba(255,255,255,0.3); display: flex; align-items: center; gap: 4px; }
+  #save-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(100,220,150,0.5); }
+  /* Goal banner */
+  #goal-banner { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(10,10,30,0.88); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 7px 16px; font-size: 12px; color: rgba(255,255,255,0.75); display: none; pointer-events: none; white-space: nowrap; }
+  #goal-banner.visible { display: block; }
+  /* Portal overlay */
+  #portal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0); z-index: 100; display: none; align-items: center; justify-content: center; flex-direction: column; transition: background 0.5s; }
+  #portal-overlay.active { display: flex; }
+  #particle-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 99; display: none; }
+  #particle-canvas.active { display: block; }
+  #portal-swirl { width: 180px; height: 180px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 44px; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #portal-msg { color: #fff; font-size: 17px; font-weight: 500; margin-top: 18px; opacity: 0.85; }
+  #portal-dest { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 6px; }
+  #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%) translateY(16px); background: rgba(15,15,35,0.96); color: #fff; padding: 9px 18px; border-radius: 18px; font-size: 12px; font-weight: 500; z-index: 200; border: 1px solid rgba(255,255,255,0.1); opacity: 0; transition: all 0.28s; pointer-events: none; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #controls-hint { position: absolute; bottom: 12px; left: 12px; font-size: 10px; color: rgba(255,255,255,0.2); line-height: 1.9; pointer-events: none; }
+  #world-switcher { position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 150; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+  #world-switcher.active { display: flex; }
+  #ws-panel { background: #0c0c24; border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 22px; width: 460px; max-width: 92vw; max-height: 80vh; overflow-y: auto; }
+  #ws-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  #ws-title { font-size: 15px; font-weight: 600; color: #fff; }
+  #ws-close { background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 18px; cursor: pointer; padding: 2px 6px; }
+  #ws-close:hover { color: #fff; }
+  .ws-world { display: flex; align-items: center; gap: 12px; padding: 11px 13px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.03); margin-bottom: 7px; cursor: pointer; transition: all 0.15s; }
+  .ws-world:hover:not(.locked) { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); }
+  .ws-world.current { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
+  .ws-world.locked { opacity: 0.32; cursor: not-allowed; }
+  .ws-dot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+  .ws-info { flex: 1; }
+  .ws-world-name { font-size: 13px; font-weight: 500; color: #fff; margin-bottom: 2px; }
+  .ws-world-desc { font-size: 10px; color: rgba(255,255,255,0.38); }
+  .ws-badge { font-size: 10px; padding: 2px 8px; border-radius: 8px; font-weight: 600; flex-shrink: 0; }
+  .ws-badge.current-badge { background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.65); }
+  .ws-badge.visit-badge { background: rgba(100,220,150,0.15); color: rgb(100,220,150); }
+  .ws-badge.lock-badge { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.22); }
+  #worlds-btn { padding: 4px 11px; border-radius: 14px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.15s; margin-right: 6px; }
+  #worlds-btn:hover { background: rgba(255,255,255,0.13); color: #fff; }
+  #music-btn { padding: 4px 10px; border-radius: 14px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.15s; margin-right: 6px; }
+  #music-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); }
+  .section-label { font-size: 10px; color: rgba(255,255,255,0.3); margin-bottom: 7px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  /* Character creator modal */
+  #char-creator { position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 160; display: none; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+  #char-creator.active { display: flex; }
+  #cc-panel { background: #0c0c24; border: 1px solid rgba(255,255,255,0.13); border-radius: 16px; padding: 24px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
+  #cc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  #cc-title { font-size: 16px; font-weight: 700; color: #fff; }
+  #cc-close { background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 20px; cursor: pointer; }
+  #cc-close:hover { color: #fff; }
+  #cc-body { display: grid; grid-template-columns: 140px 1fr; gap: 20px; }
+  #cc-preview-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  #cc-preview { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; width: 120px; height: 140px; position: relative; }
+  #cc-preview canvas { display: block; }
+  #cc-name-wrap { margin-top: 6px; width: 100%; }
+  #cc-name { width: 100%; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; font-size: 12px; padding: 6px 10px; text-align: center; outline: none; }
+  #cc-name:focus { border-color: rgba(255,255,255,0.35); }
+  #cc-options { flex: 1; }
+  .cc-section { margin-bottom: 14px; }
+  .cc-section-label { font-size: 10px; color: rgba(255,255,255,0.35); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 7px; }
+  .cc-swatches { display: flex; flex-wrap: wrap; gap: 7px; }
+  .cc-swatch { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.1s, border-color 0.15s; flex-shrink: 0; }
+  .cc-swatch:hover { transform: scale(1.15); }
+  .cc-swatch.selected { border-color: #fff; transform: scale(1.18); }
+  .cc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cc-chip { padding: 4px 10px; border-radius: 20px; font-size: 11px; border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.55); cursor: pointer; transition: all 0.15s; background: rgba(255,255,255,0.04); white-space: nowrap; }
+  .cc-chip:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .cc-chip.selected { background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.45); }
+  #cc-save { width: 100%; margin-top: 18px; padding: 10px; border-radius: 10px; background: rgba(100,220,150,0.18); border: 1px solid rgba(100,220,150,0.35); color: rgb(100,220,150); font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+  #cc-save:hover { background: rgba(100,220,150,0.28); }
+  #char-btn { padding: 4px 11px; border-radius: 14px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.15s; margin-right: 6px; }
+  #char-btn:hover { background: rgba(255,255,255,0.13); color: #fff; }
+  .goal-card { background: rgba(255,200,50,0.07); border: 1px solid rgba(255,200,50,0.2); border-radius: 9px; padding: 9px; margin-bottom: 10px; }
+  .goal-title { font-size: 11px; font-weight: 600; color: rgba(255,200,50,0.9); margin-bottom: 4px; }
+  .goal-desc { font-size: 10px; color: rgba(255,255,255,0.5); line-height: 1.5; }
+  .goal-progress { height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .goal-progress-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+</style>
+</head>
+<body>
+<div id="ui-top">
+  <div id="world-info">
+    <div id="world-badge">W1</div>
+    <div id="world-name">Loading...</div>
+    <div id="dimension-counter">Dimension 1</div>
+    <div id="save-indicator"><div id="save-dot"></div><span id="save-text">Saved</span></div>
+  </div>
+  <div id="portal-bar">
+    <button id="music-btn" onclick="toggleMusic()">🔇 Music</button>
+    <button id="char-btn" onclick="openCharCreator()">🧝 Character</button>
+    <button id="worlds-btn" onclick="openWorldSwitcher()">🌍 Worlds</button>
+    <span id="portal-label">Portal:</span>
+    <div id="portal-progress-wrap"><div id="portal-progress" style="width:0%"></div></div>
+    <span id="portal-text">Craft key</span>
+  </div>
+</div>
+<div id="game-wrap">
+  <div id="canvas-area">
+    <canvas id="gameCanvas"></canvas>
+    <div id="goal-banner">🎯 Goal: Craft a Crystal Lamp to light the caverns!</div>
+    <div id="minimap-wrap">
+      <canvas id="minimapCanvas" width="100" height="80"></canvas>
+      <div id="minimap-label">MAP</div>
+    </div>
+    <div id="controls-hint">WASD / Arrows · Walk to collect · Space = portal key</div>
+  </div>
+  <div id="side-panel">
+    <div class="panel-tab-bar">
+      <button class="panel-tab active" data-tab="inventory">🎒 Bag</button>
+      <button class="panel-tab" data-tab="crafting">⚗️ Craft</button>
+      <button class="panel-tab" data-tab="codex">📖 Codex</button>
+    </div>
+    <div id="tab-inventory" class="panel-content active"></div>
+    <div id="tab-crafting" class="panel-content"></div>
+    <div id="tab-codex" class="panel-content"></div>
+  </div>
+</div>
+<div id="char-creator">
+  <div id="cc-panel">
+    <div id="cc-header">
+      <div id="cc-title">🧝 Customise Your Character</div>
+      <button id="cc-close" onclick="closeCharCreator()">✕</button>
+    </div>
+    <div id="cc-body">
+      <div id="cc-preview-wrap">
+        <canvas id="cc-canvas" width="120" height="150"></canvas>
+        <div id="cc-name-wrap">
+          <input id="cc-name" type="text" maxlength="16" placeholder="Your name..." />
+        </div>
+      </div>
+      <div id="cc-options"></div>
+    </div>
+    <button id="cc-save" onclick="saveCharacter()">✅ Save Character</button>
+  </div>
+</div>
+<div id="world-switcher">
+  <div id="ws-panel">
+    <div id="ws-header"><div id="ws-title">🌍 Your Dimensions</div><button id="ws-close" onclick="closeWorldSwitcher()">✕</button></div>
+    <div id="ws-list"></div>
+  </div>
+</div>
+<canvas id="particle-canvas"></canvas>
+<div id="portal-overlay">
+  <div id="portal-swirl">🌀</div>
+  <div id="portal-msg">Entering new dimension...</div>
+  <div id="portal-dest"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// WORLD GOALS — per-world objectives that affect gameplay
+// ═══════════════════════════════════════════════════════
+// permanent:true  → effect ALWAYS returns on each visit (must re-craft every time)
+// permanent:false → effect clears FOREVER once solved (first visit only)
+const WORLD_GOALS = {
+  // DARKNESS worlds — must re-light every visit
+  crystal:  { id:'lamp',    desc:'The caverns are pitch dark. Craft a Crystal Lamp to light your way!',          craftId:'k3',  unlocks:'light', craftName:'Crystal Lamp',    permanent:true  },
+  autumn:   { id:'lantern', desc:'The forest is dim and shadowy. Craft a Forest Lantern to see the path!',       craftId:'k8',  unlocks:'light', craftName:'Forest Lantern',  permanent:true  },
+  mushroom: { id:'spore',   desc:'Spores cloud the air. Craft a Spore Lantern to glow through the dark!',        craftId:'k15', unlocks:'light', craftName:'Spore Lantern',   permanent:true  },
+  // FOG worlds — fog clears permanently once you craft the item
+  tropics:  { id:'compass', desc:'Sea fog blankets the shore. Craft a Pearl Necklace to find your bearings!',    craftId:'k5',  unlocks:'fog',   craftName:'Pearl Necklace',  permanent:false },
+  sky:      { id:'prism',   desc:'Storm clouds block your view. Craft a Rainbow Prism to part them!',            craftId:'k10', unlocks:'fog',   craftName:'Rainbow Prism',   permanent:false },
+  volcano:  { id:'shield',  desc:'Toxic ash fills the air. Craft an Obsidian Blade to cut through the haze!',   craftId:'k11', unlocks:'fog',   craftName:'Obsidian Blade',  permanent:false },
+  snow:     { id:'globe',   desc:'A blizzard blinds you completely. Craft a Frost Globe to calm the storm!',     craftId:'k13', unlocks:'fog',   craftName:'Frost Globe',     permanent:false },
+};
+
+// ═══════════════════════════════════════════════════════
+// WORLD DEFINITIONS (8 worlds)
+// ═══════════════════════════════════════════════════════
+const WORLDS = [
+  {
+    id:'meadow', name:'Sunlit Meadow', badge:'W1',
+    accent:'#7ec850', badgeBg:'#4a9e2f', badgeText:'#fff',
+    desc:'A warm golden meadow humming with bees and wildflowers.',
+    music:'meadow',
+    resources:[
+      {id:'flower',icon:'🌸',name:'Flower',color:'#f472b6'},
+      {id:'grass',icon:'🌿',name:'Grass',color:'#4ade80'},
+      {id:'mushroom',icon:'🍄',name:'Mushroom',color:'#fb923c'},
+      {id:'berry',icon:'🫐',name:'Berry',color:'#818cf8'},
+      {id:'honey',icon:'🍯',name:'Honey',color:'#fbbf24'},
+      {id:'pebble',icon:'🪨',name:'Pebble',color:'#94a3b8'},
+    ],
+    palette:['#5a9e3a','#4a8e2a','#6ab04a','#3a7a1a','#7ac05a','#2d5a1b'],
+    groundColor:'#4a8e2a', particleColors:['#7ec850','#f472b6','#fbbf24','#fff'],
+    obstacleColor:'#2d5a1b', obstacleIcon:'🌳', obstacleRate:0.06,
+  },
+  {
+    id:'crystal', name:'Crystal Caverns', badge:'W2',
+    accent:'#a78bfa', badgeBg:'#6d28d9', badgeText:'#fff',
+    desc:'A glittering underground cavern filled with magical crystals.',
+    music:'crystal',
+    resources:[
+      {id:'crystal_blue',icon:'💎',name:'Blue Crystal',color:'#60a5fa'},
+      {id:'crystal_pink',icon:'🔮',name:'Pink Crystal',color:'#f472b6'},
+      {id:'glowstone',icon:'✨',name:'Glowstone',color:'#fde68a'},
+      {id:'moonrock',icon:'🌑',name:'Moonrock',color:'#94a3b8'},
+      {id:'stardust',icon:'⭐',name:'Stardust',color:'#fbbf24'},
+      {id:'lichen',icon:'🌾',name:'Cave Lichen',color:'#34d399'},
+    ],
+    palette:['#2d2d6a','#1a1a5a','#3a3a7a','#252560','#4a4a8a','#1a1a4a'],
+    groundColor:'#252565', particleColors:['#a78bfa','#60a5fa','#f472b6','#fde68a'],
+    obstacleColor:'#6d28d9', obstacleIcon:'💠', obstacleRate:0.08,
+  },
+  {
+    id:'tropics', name:'Tropical Shore', badge:'W3',
+    accent:'#38bdf8', badgeBg:'#0284c7', badgeText:'#fff',
+    desc:'Warm sands, turquoise waters, and colourful tropical life.',
+    music:'tropics',
+    resources:[
+      {id:'shell',icon:'🐚',name:'Shell',color:'#fde68a'},
+      {id:'coconut',icon:'🥥',name:'Coconut',color:'#d97706'},
+      {id:'coral',icon:'🪸',name:'Coral',color:'#f87171'},
+      {id:'seaweed',icon:'🌊',name:'Seaweed',color:'#34d399'},
+      {id:'pearl',icon:'🫧',name:'Pearl',color:'#e2e8f0'},
+      {id:'driftwood',icon:'🪵',name:'Driftwood',color:'#92400e'},
+    ],
+    palette:['#1a6a8a','#0e5a7a','#2a7a9a','#155070','#3a8aaa','#0e4a6a'],
+    groundColor:'#d4a96a', particleColors:['#38bdf8','#fde68a','#f87171','#34d399'],
+    obstacleColor:'#0e4a6a', obstacleIcon:'🪨', obstacleRate:0.05,
+  },
+  {
+    id:'autumn', name:'Autumn Forest', badge:'W4',
+    accent:'#fb923c', badgeBg:'#c2410c', badgeText:'#fff',
+    desc:'A forest ablaze with amber and crimson leaves.',
+    music:'autumn',
+    resources:[
+      {id:'red_leaf',icon:'🍂',name:'Red Leaf',color:'#ef4444'},
+      {id:'acorn',icon:'🌰',name:'Acorn',color:'#92400e'},
+      {id:'pinecone',icon:'🌲',name:'Pinecone',color:'#65a30d'},
+      {id:'amber_gem',icon:'🟡',name:'Amber Gem',color:'#f59e0b'},
+      {id:'bark',icon:'🪵',name:'Bark',color:'#78350f'},
+      {id:'foxglove',icon:'🌺',name:'Foxglove',color:'#db2777'},
+    ],
+    palette:['#7a3a1a','#6a2a0a','#8a4a2a','#5a2010','#9a5a3a','#4a1f0a'],
+    groundColor:'#6a3a1a', particleColors:['#fb923c','#ef4444','#f59e0b','#db2777'],
+    obstacleColor:'#4a1f0a', obstacleIcon:'🌲', obstacleRate:0.10,
+  },
+  {
+    id:'sky', name:'Sky Islands', badge:'W5',
+    accent:'#7dd3fc', badgeBg:'#0369a1', badgeText:'#fff',
+    desc:'Floating islands among the clouds with rainbow bridges.',
+    music:'sky',
+    resources:[
+      {id:'cloud_fluff',icon:'☁️',name:'Cloud Fluff',color:'#e2e8f0'},
+      {id:'rainbow_shard',icon:'🌈',name:'Rainbow Shard',color:'#a78bfa'},
+      {id:'sunstone',icon:'🌟',name:'Sunstone',color:'#fde68a'},
+      {id:'wind_crystal',icon:'💨',name:'Wind Crystal',color:'#bae6fd'},
+      {id:'sky_bloom',icon:'🌼',name:'Sky Bloom',color:'#fde68a'},
+      {id:'feather',icon:'🪶',name:'Feather',color:'#94a3b8'},
+    ],
+    palette:['#3a5a9a','#2a4a8a','#4a6aaa','#1e3a7a','#5a7aba','#1e3a6a'],
+    groundColor:'#3a5a9a', particleColors:['#7dd3fc','#a78bfa','#fde68a','#e2e8f0'],
+    obstacleColor:'#1e3a6a', obstacleIcon:'⛅', obstacleRate:0.07,
+  },
+  {
+    id:'volcano', name:'Volcanic Caldera', badge:'W6',
+    accent:'#f97316', badgeBg:'#9a3412', badgeText:'#fff',
+    desc:'A dramatic volcanic landscape with bubbling lava pools and obsidian spires.',
+    music:'volcano',
+    resources:[
+      {id:'obsidian',icon:'🖤',name:'Obsidian',color:'#374151'},
+      {id:'lava_pearl',icon:'🔴',name:'Lava Pearl',color:'#ef4444'},
+      {id:'ash_bloom',icon:'⚫',name:'Ash Bloom',color:'#6b7280'},
+      {id:'magma_gem',icon:'🟠',name:'Magma Gem',color:'#f97316'},
+      {id:'sulfur',icon:'💛',name:'Sulfur',color:'#eab308'},
+      {id:'fire_moss',icon:'🌿',name:'Fire Moss',color:'#84cc16'},
+    ],
+    palette:['#6a1a0a','#5a0a00','#7a2a1a','#4a0800','#8a3a2a','#3a0500'],
+    groundColor:'#4a1005', particleColors:['#f97316','#ef4444','#eab308','#ff6b35'],
+    obstacleColor:'#3a0500', obstacleIcon:'🪨', obstacleRate:0.09,
+  },
+  {
+    id:'snow', name:'Frozen Tundra', badge:'W7',
+    accent:'#bae6fd', badgeBg:'#0c4a6e', badgeText:'#fff',
+    desc:'A serene frozen expanse where snowflakes fall like tiny stars.',
+    music:'snow',
+    resources:[
+      {id:'ice_crystal',icon:'❄️',name:'Ice Crystal',color:'#bae6fd'},
+      {id:'snowberry',icon:'⚪',name:'Snowberry',color:'#f1f5f9'},
+      {id:'frozen_flower',icon:'🌷',name:'Frozen Flower',color:'#e2e8f0'},
+      {id:'tundra_stone',icon:'🪨',name:'Tundra Stone',color:'#94a3b8'},
+      {id:'frost_moss',icon:'🍀',name:'Frost Moss',color:'#7dd3fc'},
+      {id:'aurora_dust',icon:'🔵',name:'Aurora Dust',color:'#c084fc'},
+    ],
+    palette:['#8ab4cc','#6a94ac','#aad4ec','#4a7a9c','#cae4fc','#2a5a7c'],
+    groundColor:'#a8cce0', particleColors:['#bae6fd','#e2e8f0','#c084fc','#7dd3fc'],
+    obstacleColor:'#2a5a7c', obstacleIcon:'🧊', obstacleRate:0.07,
+  },
+  {
+    id:'mushroom', name:'Mycelium Realm', badge:'W8',
+    accent:'#e879f9', badgeBg:'#86198f', badgeText:'#fff',
+    desc:'A bioluminescent wonderland of giant mushrooms and glowing spores.',
+    music:'mushroom',
+    resources:[
+      {id:'spore_cap',icon:'🍄',name:'Spore Cap',color:'#e879f9'},
+      {id:'glow_filament',icon:'🪡',name:'Glow Filament',color:'#34d399'},
+      {id:'mycel_root',icon:'🌱',name:'Mycel Root',color:'#a78bfa'},
+      {id:'fairy_ring',icon:'⭕',name:'Fairy Ring',color:'#f472b6'},
+      {id:'spore_dust',icon:'🌫️',name:'Spore Dust',color:'#c084fc'},
+      {id:'amber_sap',icon:'🟡',name:'Amber Sap',color:'#fbbf24'},
+    ],
+    palette:['#4a1a6a','#3a0a5a','#5a2a7a','#2a0050','#6a3a8a','#1a0040'],
+    groundColor:'#2a0a40', particleColors:['#e879f9','#34d399','#a78bfa','#f472b6'],
+    obstacleColor:'#1a0040', obstacleIcon:'🍄', obstacleRate:0.08,
+  },
+];
+
+// ═══════════════════════════════════════════════════════
+// CRAFTING RECIPES
+// ═══════════════════════════════════════════════════════
+const RECIPES = [
+  {id:'pk1',name:'Meadow Portal Key',icon:'🗝️',desc:'Opens a portal forward from Sunlit Meadow.',ingredients:{flower:3,honey:2,mushroom:2},result:{id:'portal_key',name:'Portal Key',icon:'🗝️'},category:'portal',worldId:'meadow'},
+  {id:'pk2',name:'Cavern Portal Key',icon:'🗝️',desc:'Opens a portal from Crystal Caverns.',ingredients:{crystal_blue:2,glowstone:3,stardust:2},result:{id:'portal_key',name:'Portal Key',icon:'🗝️'},category:'portal',worldId:'crystal'},
+  {id:'pk3',name:'Shore Portal Key',icon:'🗝️',desc:'Opens a portal from Tropical Shore.',ingredients:{pearl:2,coral:3,shell:3},result:{id:'portal_key',name:'Portal Key',icon:'🗝️'},category:'portal',worldId:'tropics'},
+  {id:'pk4',name:'Forest Portal Key',icon:'🗝️',desc:'Opens a portal from Autumn Forest.',ingredients:{amber_gem:2,red_leaf:4,acorn:3},result:{id:'portal_key',name:'Portal Key',icon:'🗝️'},category:'portal',worldId:'autumn'},
+  {id:'pk5',name:'Sky Portal Key',icon:'🗝️',desc:'Opens a portal from Sky Islands.',ingredients:{rainbow_shard:2,sunstone:2,wind_crystal:3},result:{id:'portal_key',name:'Portal Key',icon:'🗝️'},category:'portal',worldId:'sky'},
+  {id:'pk6',name:'Caldera Portal Key',icon:'🗝️',desc:'Opens a portal from the Volcanic Caldera.',ingredients:{obsidian:2,magma_gem:3,lava_pearl:2},result:{id:'portal_key',name:'Portal Key',icon:'🗝️'},category:'portal',worldId:'volcano'},
+  {id:'pk7',name:'Tundra Portal Key',icon:'🗝️',desc:'Opens a portal from Frozen Tundra.',ingredients:{ice_crystal:3,aurora_dust:2,frost_moss:2},result:{id:'portal_key',name:'Portal Key',icon:'🗝️'},category:'portal',worldId:'snow'},
+  {id:'pk8',name:'Mycelium Portal Key',icon:'🗝️',desc:'Opens a portal from the Mycelium Realm.',ingredients:{spore_cap:3,glow_filament:2,fairy_ring:2},result:{id:'portal_key',name:'Portal Key',icon:'🗝️'},category:'portal',worldId:'mushroom'},
+  {id:'k1',name:'Flower Crown',icon:'👑',desc:'A beautiful crown woven from meadow blooms.',ingredients:{flower:5,grass:3},result:{id:'flower_crown',name:'Flower Crown',icon:'👑'},category:'keepsake',worldId:'meadow'},
+  {id:'k2',name:'Mushroom Tea',icon:'🍵',desc:'A warm brew that smells of the forest floor.',ingredients:{mushroom:3,honey:1},result:{id:'mushroom_tea',name:'Mushroom Tea',icon:'🍵'},category:'keepsake',worldId:'meadow'},
+  {id:'k3',name:'Crystal Lamp',icon:'🪔',desc:'A glowing lamp that illuminates the dark caverns!',ingredients:{glowstone:3,crystal_blue:2,moonrock:1},result:{id:'crystal_lamp',name:'Crystal Lamp',icon:'🪔'},category:'keepsake',worldId:'crystal'},
+  {id:'k4',name:'Starmap',icon:'🗺️',desc:'A shimmering map of dimensions made from stardust.',ingredients:{stardust:4,lichen:2,moonrock:2},result:{id:'starmap',name:'Starmap',icon:'🗺️'},category:'keepsake',worldId:'crystal'},
+  {id:'k5',name:'Pearl Necklace',icon:'📿',desc:'Strung from the finest tropical pearls. Clears the sea fog!',ingredients:{pearl:3,shell:2,seaweed:1},result:{id:'pearl_necklace',name:'Pearl Necklace',icon:'📿'},category:'keepsake',worldId:'tropics'},
+  {id:'k6',name:'Coconut Bowl',icon:'🥣',desc:'A handy bowl carved from a tropical coconut.',ingredients:{coconut:2,driftwood:1},result:{id:'coconut_bowl',name:'Coconut Bowl',icon:'🥣'},category:'keepsake',worldId:'tropics'},
+  {id:'k7',name:'Autumn Wreath',icon:'🍁',desc:'A gorgeous wreath from autumn leaves and acorns.',ingredients:{red_leaf:5,acorn:3,foxglove:2},result:{id:'autumn_wreath',name:'Autumn Wreath',icon:'🍁'},category:'keepsake',worldId:'autumn'},
+  {id:'k8',name:'Forest Lantern',icon:'🏮',desc:'Glows amber — lights the dark forest paths!',ingredients:{bark:3,amber_gem:1,pinecone:2},result:{id:'lantern',name:'Forest Lantern',icon:'🏮'},category:'keepsake',worldId:'autumn'},
+  {id:'k9',name:'Cloud Pillow',icon:'🛏️',desc:'Incredibly soft, stuffed with cloud fluff.',ingredients:{cloud_fluff:5,feather:3},result:{id:'cloud_pillow',name:'Cloud Pillow',icon:'🛏️'},category:'keepsake',worldId:'sky'},
+  {id:'k10',name:'Rainbow Prism',icon:'🔭',desc:'Parts the storm clouds and reveals the sky.',ingredients:{rainbow_shard:3,sunstone:2,sky_bloom:2},result:{id:'prism',name:'Rainbow Prism',icon:'🔭'},category:'keepsake',worldId:'sky'},
+  {id:'k11',name:'Obsidian Blade',icon:'🗡️',desc:'Cuts through toxic volcanic ash — clears the haze!',ingredients:{obsidian:4,magma_gem:1},result:{id:'obsidian_blade',name:'Obsidian Blade',icon:'🗡️'},category:'keepsake',worldId:'volcano'},
+  {id:'k12',name:'Lava Lamp',icon:'🌋',desc:'A mesmerising lamp filled with slow lava.',ingredients:{lava_pearl:2,sulfur:2,fire_moss:1},result:{id:'lava_lamp',name:'Lava Lamp',icon:'🌋'},category:'keepsake',worldId:'volcano'},
+  {id:'k13',name:'Frost Globe',icon:'🔮',desc:'Calms the blizzard and restores clear vision!',ingredients:{ice_crystal:3,aurora_dust:3,snowberry:2},result:{id:'frost_globe',name:'Frost Globe',icon:'🔮'},category:'keepsake',worldId:'snow'},
+  {id:'k14',name:'Tundra Wreath',icon:'❄️',desc:'A delicate wreath of frozen flowers and frost moss.',ingredients:{frozen_flower:4,frost_moss:2,tundra_stone:1},result:{id:'tundra_wreath',name:'Tundra Wreath',icon:'❄️'},category:'keepsake',worldId:'snow'},
+  {id:'k15',name:'Spore Lantern',icon:'🫧',desc:'Glows bioluminescently — cuts through the spore haze!',ingredients:{spore_cap:3,glow_filament:2,spore_dust:2},result:{id:'spore_lantern',name:'Spore Lantern',icon:'🫧'},category:'keepsake',worldId:'mushroom'},
+  {id:'k16',name:'Mycel Crown',icon:'👸',desc:'A royal crown woven from luminous mycelium.',ingredients:{mycel_root:4,fairy_ring:2,amber_sap:2},result:{id:'mycel_crown',name:'Mycel Crown',icon:'👸'},category:'keepsake',worldId:'mushroom'},
+];
+
+// ═══════════════════════════════════════════════════════
+// CHARACTER CUSTOMIZATION
+// ═══════════════════════════════════════════════════════
+const SKIN_TONES = [
+  { id:'s1', color:'#ffcda0', label:'Light'       },
+  { id:'s2', color:'#f5b07a', label:'Medium Light' },
+  { id:'s3', color:'#d4845a', label:'Medium'       },
+  { id:'s4', color:'#a0522d', label:'Medium Dark'  },
+  { id:'s5', color:'#6b3a2a', label:'Dark'         },
+  { id:'s6', color:'#3d1f10', label:'Deep'         },
+];
+const HAIR_COLORS = [
+  // Naturals
+  { id:'h1',  color:'#1a0a00', label:'Black'        },
+  { id:'h2',  color:'#3d2200', label:'Dark Brown'   },
+  { id:'h3',  color:'#7a4020', label:'Brown'        },
+  { id:'h4',  color:'#c87820', label:'Auburn'       },
+  { id:'h5',  color:'#e8c060', label:'Blonde'       },
+  { id:'h6',  color:'#f0f0f0', label:'White'        },
+  { id:'h7',  color:'#888888', label:'Grey'         },
+  { id:'h8',  color:'#c0a060', label:'Strawberry'   },
+  { id:'h9',  color:'#b07840', label:'Chestnut'     },
+  // Bolds
+  { id:'h10', color:'#cc3333', label:'Red'          },
+  { id:'h11', color:'#cc44cc', label:'Purple'       },
+  { id:'h12', color:'#3388ff', label:'Blue'         },
+  { id:'h13', color:'#33bb66', label:'Green'        },
+  { id:'h14', color:'#ff8833', label:'Orange'       },
+  { id:'h15', color:'#ff69b4', label:'Hot Pink'     },
+  { id:'h16', color:'#40e0d0', label:'Teal'         },
+  { id:'h17', color:'#ffd700', label:'Gold'         },
+  { id:'h18', color:'#9b59b6', label:'Violet'       },
+  // Pastels
+  { id:'h19', color:'#b0d8f8', label:'Pastel Blue'  },
+  { id:'h20', color:'#f8b0d0', label:'Pastel Pink'  },
+  { id:'h21', color:'#b0f8d0', label:'Pastel Green' },
+  { id:'h22', color:'#f8e0b0', label:'Pastel Yellow'},
+  { id:'h23', color:'#e0b0f8', label:'Pastel Lilac' },
+];
+
+const HAIR_STYLES = [
+  { id:'hs1',  label:'Short',         tuft:true,  long:false, curly:false, bun:false                             },
+  { id:'hs2',  label:'Long',          tuft:false, long:true,  curly:false, bun:false                             },
+  { id:'hs3',  label:'Curly',         tuft:true,  long:false, curly:true,  bun:false                             },
+  { id:'hs4',  label:'Bun',           tuft:false, long:false, curly:false, bun:true                              },
+  { id:'hs5',  label:'Fringe',        tuft:true,  long:false, curly:false, bun:false,  fringe:true               },
+  { id:'hs6',  label:'Bald',          tuft:false, long:false, curly:false, bun:false,  bald:true                 },
+  { id:'hs7',  label:'Pigtails',      tuft:false, long:false, curly:false, bun:false,  pigtails:true             },
+  { id:'hs8',  label:'Ponytail',      tuft:false, long:false, curly:false, bun:false,  ponytail:true             },
+  { id:'hs9',  label:'Afro',          tuft:false, long:false, curly:false, bun:false,  afro:true                 },
+  { id:'hs10', label:'Spiky',         tuft:false, long:false, curly:false, bun:false,  spiky:true                },
+  { id:'hs11', label:'Long + Curly',  tuft:false, long:true,  curly:true,  bun:false                             },
+  { id:'hs12', label:'Bob',           tuft:false, long:false, curly:false, bun:false,  bob:true                  },
+  { id:'hs13', label:'Mohawk',        tuft:false, long:false, curly:false, bun:false,  mohawk:true               },
+  { id:'hs14', label:'Twin Buns',     tuft:false, long:false, curly:false, bun:false,  twinbuns:true             },
+  { id:'hs15', label:'Braids',        tuft:false, long:false, curly:false, bun:false,  braids:true               },
+];
+
+const EYE_STYLES = [
+  { id:'e1',  label:'Round',       shape:'round'    },
+  { id:'e2',  label:'Narrow',      shape:'narrow'   },
+  { id:'e3',  label:'Wide',        shape:'wide'     },
+  { id:'e4',  label:'⭐ Star',      shape:'star'     },
+  { id:'e5',  label:'💙 Blue',      shape:'blue'     },
+  { id:'e6',  label:'💚 Green',     shape:'green'    },
+  { id:'e7',  label:'❤️ Red',       shape:'red'      },
+  { id:'e8',  label:'💜 Purple',    shape:'purple'   },
+  { id:'e9',  label:'😊 Happy',     shape:'happy'    },
+  { id:'e10', label:'😤 Angry',     shape:'angry'    },
+  { id:'e11', label:'😴 Sleepy',    shape:'sleepy'   },
+  { id:'e12', label:'🥺 Puppy',     shape:'puppy'    },
+  { id:'e13', label:'✨ Sparkle',   shape:'sparkle'  },
+  { id:'e14', label:'💎 Diamond',   shape:'diamond'  },
+  { id:'e15', label:'🌀 Spiral',    shape:'spiral'   },
+];
+
+const ACCESSORIES = [
+  { id:'a0',  label:'None',             icon:''   },
+  // Hats
+  { id:'a1',  label:'🎩 Top Hat',       icon:'🎩' },
+  { id:'a2',  label:'👒 Sun Hat',       icon:'👒' },
+  { id:'a3',  label:'🧢 Cap',           icon:'🧢' },
+  { id:'a4',  label:'👑 Crown',         icon:'👑' },
+  { id:'a5',  label:'🪖 Helmet',        icon:'🪖' },
+  { id:'a6',  label:'🎓 Grad Cap',      icon:'🎓' },
+  { id:'a7',  label:'⛑️ Hard Hat',      icon:'⛑️' },
+  { id:'a8',  label:'🧣 Beanie',        icon:'🧣' },
+  { id:'a9',  label:'🎭 Jester Hat',    icon:'🎭' },
+  // Face
+  { id:'a10', label:'😎 Sunglasses',    icon:'😎' },
+  { id:'a11', label:'🥽 Goggles',       icon:'🥽' },
+  { id:'a12', label:'🎀 Ribbon',        icon:'🎀' },
+  { id:'a13', label:'🌸 Flower Pin',    icon:'🌸' },
+  { id:'a14', label:'🦋 Butterfly',     icon:'🦋' },
+  // Magical
+  { id:'a15', label:'🌟 Halo',          icon:'🌟' },
+  { id:'a16', label:'🎪 Jester Crown',  icon:'🎪' },
+  { id:'a17', label:'🔮 Crystal Ball',  icon:'🔮' },
+  { id:'a18', label:'⚡ Lightning',     icon:'⚡' },
+  { id:'a19', label:'🌈 Rainbow',       icon:'🌈' },
+  { id:'a20', label:'🍄 Mushroom',      icon:'🍄' },
+];
+
+// Outfit styles — each has a draw function key and whether pants are hidden
+const OUTFIT_STYLES = [
+  { id:'o1',  label:'👕 T-Shirt',       draw:'tshirt',    hidePants:false },
+  { id:'o2',  label:'👗 Dress',          draw:'dress',     hidePants:true  },
+  { id:'o3',  label:'🥻 Long Dress',     draw:'longdress', hidePants:true  },
+  { id:'o4',  label:'🧥 Hoodie',         draw:'hoodie',    hidePants:false },
+  { id:'o5',  label:'🥼 Robe',           draw:'robe',      hidePants:true  },
+  { id:'o6',  label:'⚔️ Armour',         draw:'armour',    hidePants:false },
+  { id:'o7',  label:'👘 Kimono',         draw:'kimono',    hidePants:true  },
+  { id:'o8',  label:'🩱 Overalls',       draw:'overalls',  hidePants:true  },
+  { id:'o9',  label:'🦺 Explorer Vest',  draw:'vest',      hidePants:false },
+  { id:'o10', label:'🧣 Cape',           draw:'cape',      hidePants:false },
+  { id:'o11', label:'🎽 Tracksuit',      draw:'tracksuit', hidePants:false },
+  { id:'o12', label:'🧤 Jacket',         draw:'jacket',    hidePants:false },
+  { id:'o13', label:'👙 Crop Top',       draw:'croptop',   hidePants:false },
+  { id:'o14', label:'🥋 Gi / Martial',   draw:'gi',        hidePants:true  },
+  { id:'o15', label:'🧙 Wizard Robes',   draw:'wizard',    hidePants:true  },
+  { id:'o16', label:'🌿 Leaf Tunic',     draw:'tunic',     hidePants:false },
+  { id:'o17', label:'🎀 Lolita Dress',   draw:'lolita',    hidePants:true  },
+  { id:'o18', label:'🩴 Tank Top',       draw:'tanktop',   hidePants:false },
+  { id:'o19', label:'🎖️ Military',       draw:'military',  hidePants:false },
+  { id:'o20', label:'🧜 Mermaid Gown',   draw:'mermaid',   hidePants:true  },
+];
+
+const OUTFIT_COLORS = [
+  { id:'c1',  color:'#ffffff', label:'White'     },
+  { id:'c2',  color:'#222222', label:'Black'     },
+  { id:'c3',  color:'#888888', label:'Grey'      },
+  { id:'c4',  color:'#c0c0c0', label:'Silver'    },
+  { id:'c5',  color:'#ffd700', label:'Gold'      },
+  { id:'c6',  color:'#8b5e3c', label:'Brown'     },
+  { id:'c7',  color:'#3366cc', label:'Blue'      },
+  { id:'c8',  color:'#4466aa', label:'Navy'      },
+  { id:'c9',  color:'#44ccbb', label:'Teal'      },
+  { id:'c10', color:'#40e0d0', label:'Turquoise' },
+  { id:'c11', color:'#00bfff', label:'Sky Blue'  },
+  { id:'c12', color:'#228833', label:'Green'     },
+  { id:'c13', color:'#4a7a4a', label:'Forest'    },
+  { id:'c14', color:'#883399', label:'Purple'    },
+  { id:'c15', color:'#9b59b6', label:'Violet'    },
+  { id:'c16', color:'#cc3333', label:'Red'       },
+  { id:'c17', color:'#ff6347', label:'Tomato'    },
+  { id:'c18', color:'#cc8822', label:'Orange'    },
+  { id:'c19', color:'#dddd22', label:'Yellow'    },
+  { id:'c20', color:'#ee88aa', label:'Pink'      },
+  { id:'c21', color:'#ff69b4', label:'Hot Pink'  },
+  { id:'c22', color:'#f4a460', label:'Sandy'     },
+  { id:'c23', color:'#b0d8f8', label:'Baby Blue' },
+  { id:'c24', color:'#f8b0d0', label:'Baby Pink' },
+  { id:'c25', color:'#b0f8d0', label:'Mint'      },
+  { id:'c26', color:'#f8e8b0', label:'Cream'     },
+  { id:'c27', color:'#e0b0f8', label:'Lavender'  },
+  { id:'c28', color:'#f8d0b0', label:'Peach'     },
+];
+
+// Second colour for patterns/trim
+const OUTFIT_TRIM_COLORS = [
+  { id:'tr0', color:null,      label:'None'    },
+  { id:'tr1', color:'#ffffff', label:'White'   },
+  { id:'tr2', color:'#ffd700', label:'Gold'    },
+  { id:'tr3', color:'#c0c0c0', label:'Silver'  },
+  { id:'tr4', color:'#222222', label:'Black'   },
+  { id:'tr5', color:'#ff69b4', label:'Pink'    },
+  { id:'tr6', color:'#3366cc', label:'Blue'    },
+  { id:'tr7', color:'#cc3333', label:'Red'     },
+];
+
+const PANT_COLORS = [
+  { id:'p1', color:'#5b8dd9', label:'Blue'    },
+  { id:'p2', color:'#2a2a2a', label:'Black'   },
+  { id:'p3', color:'#8b5e3c', label:'Brown'   },
+  { id:'p4', color:'#4a7a4a', label:'Green'   },
+  { id:'p5', color:'#888888', label:'Grey'    },
+  { id:'p6', color:'#cc4444', label:'Red'     },
+  { id:'p7', color:'#f5f5dc', label:'Beige'   },
+  { id:'p8', color:'#4466aa', label:'Navy'    },
+];
+
+const DEFAULT_CHAR = {
+  name: 'Explorer',
+  skin:        's1',
+  hair:        'h2',
+  hairStyle:   'hs1',
+  eyes:        'e1',
+  outfit:      'o1',
+  outfitColor: 'c1',
+  outfitTrim:  'tr0',
+  pants:       'p1',
+  accessory:   'a0',
+};
+
+let charConfig = { ...DEFAULT_CHAR };
+
+function loadCharacter() {
+  try {
+    const raw = localStorage.getItem('worldhopper_char_v3');
+    if (raw) charConfig = { ...DEFAULT_CHAR, ...JSON.parse(raw) };
+  } catch(e) {}
+}
+function saveCharacter() {
+  charConfig.name = document.getElementById('cc-name').value.trim() || 'Explorer';
+  try { localStorage.setItem('worldhopper_char_v3', JSON.stringify(charConfig)); } catch(e) {}
+  closeCharCreator();
+  showToast(`✅ Saved! Looking good, ${charConfig.name}!`);
+}
+
+// ── Character Creator UI ──────────────────────────────
+function openCharCreator() {
+  document.getElementById('cc-name').value = charConfig.name;
+  renderCharOptions();
+  drawCharPreview();
+  document.getElementById('char-creator').classList.add('active');
+}
+function closeCharCreator() {
+  document.getElementById('char-creator').classList.remove('active');
+}
+document.getElementById('char-creator').addEventListener('click', e => {
+  if (e.target === document.getElementById('char-creator')) closeCharCreator();
+});
+
+function renderCharOptions() {
+  const el = document.getElementById('cc-options');
+  const currentOutfit = OUTFIT_STYLES.find(o=>o.id===charConfig.outfit) || OUTFIT_STYLES[0];
+
+  const swatch = (arr, key) => arr.map(o => {
+    const sel = charConfig[key] === o.id ? ' selected' : '';
+    return `<div class="cc-swatch${sel}" style="background:${o.color||'transparent'};${!o.color?'border:2px dashed rgba(255,255,255,0.3)':''}" title="${o.label}"
+      onclick="setChar('${key}','${o.id}')"></div>`;
+  }).join('');
+
+  const chips = (arr, key) => arr.map(o => {
+    const sel = charConfig[key] === o.id ? ' selected' : '';
+    return `<div class="cc-chip${sel}" onclick="setChar('${key}','${o.id}')">${o.icon||''} ${o.label}</div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="cc-section">
+      <div class="cc-section-label">Skin tone</div>
+      <div class="cc-swatches">${swatch(SKIN_TONES,'skin')}</div>
+    </div>
+    <div class="cc-section">
+      <div class="cc-section-label">Hair colour</div>
+      <div class="cc-swatches">${swatch(HAIR_COLORS,'hair')}</div>
+    </div>
+    <div class="cc-section">
+      <div class="cc-section-label">Hair style</div>
+      <div class="cc-chips">${chips(HAIR_STYLES,'hairStyle')}</div>
+    </div>
+    <div class="cc-section">
+      <div class="cc-section-label">Eyes</div>
+      <div class="cc-chips">${chips(EYE_STYLES,'eyes')}</div>
+    </div>
+    <div class="cc-section">
+      <div class="cc-section-label">Outfit style</div>
+      <div class="cc-chips">${chips(OUTFIT_STYLES,'outfit')}</div>
+    </div>
+    <div class="cc-section">
+      <div class="cc-section-label">Outfit colour</div>
+      <div class="cc-swatches">${swatch(OUTFIT_COLORS,'outfitColor')}</div>
+    </div>
+    <div class="cc-section">
+      <div class="cc-section-label">Trim / pattern colour</div>
+      <div class="cc-swatches">${swatch(OUTFIT_TRIM_COLORS,'outfitTrim')}</div>
+    </div>
+    ${!currentOutfit.hidePants ? `
+    <div class="cc-section">
+      <div class="cc-section-label">Pants colour</div>
+      <div class="cc-swatches">${swatch(PANT_COLORS,'pants')}</div>
+    </div>` : ''}
+    <div class="cc-section">
+      <div class="cc-section-label">Accessory</div>
+      <div class="cc-chips">${chips(ACCESSORIES,'accessory')}</div>
+    </div>
+  `;
+}
+
+function setChar(key, val) {
+  charConfig[key] = val;
+  renderCharOptions();
+  drawCharPreview();
+}
+
+// ── Preview canvas ────────────────────────────────────
+const ccCanvas = document.getElementById('cc-canvas');
+const ccCtx    = ccCanvas.getContext('2d');
+
+function drawCharPreview() {
+  ccCtx.clearRect(0,0,120,150);
+  const bg = ccCtx.createRadialGradient(60,80,5,60,110,65);
+  bg.addColorStop(0,'rgba(100,100,200,0.15)'); bg.addColorStop(1,'rgba(0,0,0,0)');
+  ccCtx.fillStyle=bg; ccCtx.fillRect(0,0,120,150);
+  ccCtx.save(); ccCtx.translate(60,115); ccCtx.scale(1.75,1.75);
+  drawCharShape(ccCtx, 'down', false, 0, '#7ec850');
+  ccCtx.restore();
+}
+
+// ── Core character draw ───────────────────────────────
+function getCharLookup() {
+  const outfitStyle = OUTFIT_STYLES.find(o=>o.id===charConfig.outfit) || OUTFIT_STYLES[0];
+  const trimEntry   = OUTFIT_TRIM_COLORS.find(t=>t.id===charConfig.outfitTrim) || OUTFIT_TRIM_COLORS[0];
+  return {
+    skin:        SKIN_TONES.find(s=>s.id===charConfig.skin)?.color        || '#ffcda0',
+    hair:        HAIR_COLORS.find(h=>h.id===charConfig.hair)?.color       || '#3d2200',
+    outfitColor: OUTFIT_COLORS.find(c=>c.id===charConfig.outfitColor)?.color || '#ffffff',
+    outfitTrim:  trimEntry.color,
+    pants:       PANT_COLORS.find(p=>p.id===charConfig.pants)?.color      || '#5b8dd9',
+    hairStyle:   HAIR_STYLES.find(h=>h.id===charConfig.hairStyle)         || HAIR_STYLES[0],
+    eyes:        EYE_STYLES.find(e=>e.id===charConfig.eyes)?.shape        || 'round',
+    accessory:   ACCESSORIES.find(a=>a.id===charConfig.accessory)         || ACCESSORIES[0],
+    outfitStyle,
+  };
+}
+
+function drawCharShape(c, facing, moving, now, accentColor) {
+  const ch         = getCharLookup();
+  const skin       = ch.skin;
+  const hair       = ch.hair;
+  const oc         = ch.outfitColor;   // main outfit colour
+  const trim       = ch.outfitTrim;    // trim/pattern colour (may be null)
+  const pants      = ch.pants;
+  const hs         = ch.hairStyle;
+  const eyes       = ch.eyes;
+  const acc        = ch.accessory;
+  const os         = ch.outfitStyle;
+  const armSwing   = moving ? Math.sin(now*12)*3 : 0;
+  const ls         = moving ? Math.sin(now*12)*4 : 0;
+
+  // ── OUTFIT DRAW FUNCTIONS ─────────────────────────────
+  function drawTShirt() {
+    c.fillStyle=oc; c.beginPath(); c.roundRect(-9,-6,18,16,4); c.fill();
+    if (trim) { c.fillStyle=trim; c.beginPath(); c.roundRect(-9,-6,18,5,[4,4,0,0]); c.fill(); }
+    // Arms (short sleeve)
+    c.fillStyle=oc; c.fillRect(-13,-4,5,7); c.fillRect(8,-4,5,7);
+    c.fillStyle=skin; c.fillRect(-13,3,5,5); c.fillRect(8,3,5,5);
+  }
+
+  function drawHoodie() {
+    c.fillStyle=oc; c.beginPath(); c.roundRect(-10,-6,20,17,5); c.fill();
+    // Hood pouch on back
+    if (trim) {
+      c.fillStyle=trim;
+      // Kangaroo pocket
+      c.beginPath(); c.roundRect(-5,2,10,6,3); c.fill();
+    }
+    // Hood visible above collar
+    c.fillStyle=oc; c.beginPath(); c.arc(0,-20,7,Math.PI,0); c.fill();
+    // Long sleeves
+    c.fillStyle=oc;
+    if (facing==='left'||facing==='right') {
+      c.fillRect(-14,-4+armSwing,6,13); c.fillRect(8,-4-armSwing,6,13);
+    } else { c.fillRect(-14,-4,6,13); c.fillRect(8,-4,6,13); }
+    // Cuffs
+    if (trim) {
+      c.fillStyle=trim;
+      if (facing==='left'||facing==='right') {
+        c.fillRect(-14,7+armSwing,6,2); c.fillRect(8,7-armSwing,6,2);
+      } else { c.fillRect(-14,7,6,2); c.fillRect(8,7,6,2); }
+    }
+    return true; // handled arms
+  }
+
+  function drawDress() {
+    // Bodice
+    c.fillStyle=oc; c.beginPath(); c.roundRect(-9,-6,18,12,3); c.fill();
+    // Skirt (A-line, knee length)
+    c.fillStyle=oc;
+    c.beginPath(); c.moveTo(-9,6); c.lineTo(-13,22); c.lineTo(13,22); c.lineTo(9,6); c.closePath(); c.fill();
+    if (trim) {
+      // Hem trim
+      c.fillStyle=trim; c.fillRect(-13,19,26,3);
+      // Bodice yoke
+      c.beginPath(); c.roundRect(-9,-6,18,5,[3,3,0,0]); c.fill();
+    }
+    // Short sleeves
+    c.fillStyle=oc; c.fillRect(-13,-4,5,7); c.fillRect(8,-4,5,7);
+    c.fillStyle=skin; c.fillRect(-13,3,5,7); c.fillRect(8,3,5,7);
+    // Shoes peek out
+    c.fillStyle='#2a2a2a';
+    c.beginPath(); c.roundRect(-8,21,7,4,[0,0,2,2]); c.fill();
+    c.beginPath(); c.roundRect(1,21,7,4,[0,0,2,2]); c.fill();
+  }
+
+  function drawLongDress() {
+    // Bodice
+    c.fillStyle=oc; c.beginPath(); c.roundRect(-9,-6,18,12,3); c.fill();
+    // Full-length skirt with gentle flare
+    c.fillStyle=oc;
+    c.beginPath(); c.moveTo(-9,6); c.lineTo(-14,28); c.lineTo(14,28); c.lineTo(9,6); c.closePath(); c.fill();
+    if (trim) {
+      // Flowing hem
+      c.fillStyle=trim; c.fillRect(-14,25,28,3);
+      c.beginPath(); c.roundRect(-9,-6,18,5,[3,3,0,0]); c.fill();
+    }
+    // Puff sleeves
+    c.fillStyle=oc;
+    c.beginPath(); c.ellipse(-13,-2,6,5,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(13,-2,6,5,0,0,Math.PI*2); c.fill();
+    c.fillStyle=skin; c.fillRect(-14,2,5,8); c.fillRect(9,2,5,8);
+  }
+
+  function drawRobe() {
+    // Wide robe body — covers everything
+    c.fillStyle=oc;
+    c.beginPath(); c.moveTo(-10,-6); c.lineTo(-13,26); c.lineTo(13,26); c.lineTo(10,-6); c.closePath(); c.fill();
+    // Centre opening stripe
+    if (trim) {
+      c.fillStyle=trim;
+      c.fillRect(-2,-6,4,32); // vertical centre strip
+      c.fillRect(-10,10,20,2); // waist belt
+    }
+    // Wide sleeves
+    c.fillStyle=oc;
+    c.beginPath(); c.moveTo(-9,-4); c.lineTo(-16,10); c.lineTo(-9,10); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(9,-4); c.lineTo(16,10); c.lineTo(9,10); c.closePath(); c.fill();
+    // Shoes
+    c.fillStyle='#2a2a2a';
+    c.beginPath(); c.roundRect(-7,24,6,4,[0,0,2,2]); c.fill();
+    c.beginPath(); c.roundRect(1,24,6,4,[0,0,2,2]); c.fill();
+  }
+
+  function drawArmour() {
+    // Breastplate
+    c.fillStyle=oc; c.beginPath(); c.roundRect(-10,-7,20,18,3); c.fill();
+    // Chest detail
+    if (trim) {
+      c.fillStyle=trim;
+      // Centre ridge
+      c.fillRect(-1.5,-5,3,14);
+      // Shoulder guards
+      c.beginPath(); c.roundRect(-13,-7,7,6,2); c.fill();
+      c.beginPath(); c.roundRect(6,-7,7,6,2); c.fill();
+    } else {
+      c.fillStyle='rgba(255,255,255,0.2)';
+      c.fillRect(-1.5,-5,3,14);
+    }
+    // Pauldrons (shoulder plates)
+    c.fillStyle=oc;
+    c.beginPath(); c.roundRect(-14,-6,7,8,2); c.fill();
+    c.beginPath(); c.roundRect(7,-6,7,8,2); c.fill();
+    // Gauntlets
+    c.fillStyle=oc;
+    if (facing==='left'||facing==='right') {
+      c.fillRect(-14,-4+armSwing,6,11); c.fillRect(8,-4-armSwing,6,11);
+    } else { c.fillRect(-14,-4,6,11); c.fillRect(8,-4,6,11); }
+    return true;
+  }
+
+  function drawKimono() {
+    // Main kimono body — wide & flowing
+    c.fillStyle=oc;
+    c.beginPath(); c.moveTo(-10,-6); c.lineTo(-12,26); c.lineTo(12,26); c.lineTo(10,-6); c.closePath(); c.fill();
+    // Collar (V-neck)
+    c.fillStyle=trim || '#fff';
+    c.beginPath(); c.moveTo(-3,-6); c.lineTo(0,-1); c.lineTo(3,-6); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(-3,-6); c.lineTo(-9,8); c.lineTo(-7,8); c.lineTo(0,-1); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(3,-6); c.lineTo(9,8); c.lineTo(7,8); c.lineTo(0,-1); c.closePath(); c.fill();
+    // Obi belt
+    c.fillStyle=trim || accentColor;
+    c.fillRect(-12,7,24,5);
+    // Wide sleeves
+    c.fillStyle=oc;
+    c.beginPath(); c.moveTo(-9,-4); c.lineTo(-16,12); c.lineTo(-8,12); c.lineTo(-9,-4); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(9,-4); c.lineTo(16,12); c.lineTo(8,12); c.lineTo(9,-4); c.closePath(); c.fill();
+    // Hem pattern stripe
+    if (trim) { c.fillStyle=trim; c.fillRect(-12,22,24,3); }
+  }
+
+  function drawOveralls() {
+    // Bib top part
+    c.fillStyle=oc; c.beginPath(); c.roundRect(-7,-7,14,14,3); c.fill();
+    // Strap lines
+    c.fillStyle=oc;
+    c.fillRect(-7,-7,3,3); c.fillRect(4,-7,3,3);
+    // Main trouser body
+    c.fillStyle=oc;
+    c.beginPath(); c.roundRect(-9,7,18,16,2); c.fill();
+    // Pocket on bib
+    if (trim) {
+      c.fillStyle=trim;
+      c.beginPath(); c.roundRect(-3,-4,6,5,1); c.fill();
+    }
+    // Buttons on straps
+    c.fillStyle=trim || '#ffd700';
+    c.beginPath(); c.arc(-5,-5,1.5,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(5,-5,1.5,0,Math.PI*2); c.fill();
+    // Legs split
+    c.fillStyle=oc;
+    c.beginPath(); c.roundRect(-8,14,7,11,[0,0,3,3]); c.fill();
+    c.beginPath(); c.roundRect(1,14,7,11,[0,0,3,3]); c.fill();
+    // Shoes
+    c.fillStyle='#2a2a2a';
+    c.beginPath(); c.roundRect(-9,23,9,4,[0,0,3,3]); c.fill();
+    c.beginPath(); c.roundRect(0,23,9,4,[0,0,3,3]); c.fill();
+    // Arms (bare skin)
+    c.fillStyle=skin;
+    if (facing==='left'||facing==='right') {
+      c.fillRect(-13,-4+armSwing,4,10); c.fillRect(9,-4-armSwing,4,10);
+    } else { c.fillRect(-13,-4,4,10); c.fillRect(9,-4,4,10); }
+    return true;
+  }
+
+  function drawVest() {
+    // Base shirt underneath (skin tone arms visible)
+    c.fillStyle='#ffffff'; c.beginPath(); c.roundRect(-9,-6,18,16,4); c.fill();
+    // Vest over top
+    c.fillStyle=oc;
+    c.beginPath(); c.moveTo(-9,-6); c.lineTo(-9,10); c.lineTo(-3,10); c.lineTo(-3,-6); c.closePath(); c.fill(); // left panel
+    c.beginPath(); c.moveTo(9,-6); c.lineTo(9,10); c.lineTo(3,10); c.lineTo(3,-6); c.closePath(); c.fill();  // right panel
+    // Collar/lapels
+    c.fillStyle=oc;
+    c.beginPath(); c.roundRect(-9,-6,5,5,[2,0,0,2]); c.fill();
+    c.beginPath(); c.roundRect(4,-6,5,5,[0,2,2,0]); c.fill();
+    if (trim) {
+      // Pocket details
+      c.fillStyle=trim;
+      c.beginPath(); c.roundRect(-7,1,4,4,1); c.fill();
+      c.beginPath(); c.roundRect(3,1,4,4,1); c.fill();
+    }
+    // Arm skin
+    c.fillStyle=skin;
+    if (facing==='left'||facing==='right') {
+      c.fillRect(-13,-4+armSwing,4,11); c.fillRect(9,-4-armSwing,4,11);
+    } else { c.fillRect(-13,-4,4,11); c.fillRect(9,-4,4,11); }
+    return true;
+  }
+
+  function drawCape() {
+    // Base shirt
+    c.fillStyle='#555'; c.beginPath(); c.roundRect(-9,-6,18,16,4); c.fill();
+    if (trim) { c.fillStyle=trim; c.beginPath(); c.roundRect(-9,-6,18,5,[4,4,0,0]); c.fill(); }
+    // Cape behind — drawn before body so it appears behind
+    c.fillStyle=oc;
+    c.beginPath();
+    c.moveTo(-8,-6); c.lineTo(-12,20); c.quadraticCurveTo(0,26,12,20); c.lineTo(8,-6); c.closePath();
+    c.fill();
+    if (trim) {
+      c.fillStyle=trim; c.lineWidth=1.5; c.strokeStyle=trim;
+      c.beginPath(); c.moveTo(-8,-6); c.lineTo(-12,20); c.stroke();
+      c.beginPath(); c.moveTo(8,-6); c.lineTo(12,20); c.stroke();
+    }
+    // Re-draw shirt front over cape
+    c.fillStyle='#555'; c.beginPath(); c.roundRect(-8,-5,16,13,3); c.fill();
+    // Clasp
+    c.fillStyle=trim || '#ffd700';
+    c.beginPath(); c.arc(0,-4,2.5,0,Math.PI*2); c.fill();
+    // Arm skin
+    c.fillStyle=skin;
+    if (facing==='left'||facing==='right') {
+      c.fillRect(-13,-4+armSwing,4,11); c.fillRect(9,-4-armSwing,4,11);
+    } else { c.fillRect(-13,-4,4,11); c.fillRect(9,-4,4,11); }
+    return true;
+  }
+
+  function drawTracksuit() {
+    // Zip-up jacket body
+    c.fillStyle=oc; c.beginPath(); c.roundRect(-10,-6,20,17,4); c.fill();
+    // Zip stripe down centre
+    c.fillStyle=trim||'#fff'; c.fillRect(-1.5,-6,3,17);
+    // Collar
+    c.fillStyle=oc; c.beginPath(); c.roundRect(-5,-8,10,4,2); c.fill();
+    // Side racing stripes
+    if (trim) {
+      c.fillStyle=trim;
+      c.fillRect(-10,-6,3,17); c.fillRect(7,-6,3,17);
+    }
+    // Long sleeves with cuffs
+    c.fillStyle=oc;
+    if (facing==='left'||facing==='right') {
+      c.fillRect(-15,-5+armSwing,6,14); c.fillRect(9,-5-armSwing,6,14);
+    } else { c.fillRect(-15,-5,6,14); c.fillRect(9,-5,6,14); }
+    if (trim) {
+      c.fillStyle=trim;
+      if (facing==='left'||facing==='right') {
+        c.fillRect(-15,7+armSwing,6,2); c.fillRect(9,7-armSwing,6,2);
+      } else { c.fillRect(-15,7,6,2); c.fillRect(9,7,6,2); }
+    }
+    return true;
+  }
+
+  function drawJacket() {
+    // Main jacket body
+    c.fillStyle=oc; c.beginPath(); c.roundRect(-10,-6,20,18,3); c.fill();
+    // Lapels
+    c.fillStyle=trim||oc;
+    c.beginPath(); c.moveTo(-3,-6); c.lineTo(-9,2); c.lineTo(-5,2); c.lineTo(0,-2); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(3,-6); c.lineTo(9,2); c.lineTo(5,2); c.lineTo(0,-2); c.closePath(); c.fill();
+    // Inside shirt peek
+    c.fillStyle='#fff'; c.beginPath(); c.roundRect(-3,-6,6,12,1); c.fill();
+    // Pockets
+    c.fillStyle=trim||oc+'cc';
+    c.beginPath(); c.roundRect(-8,4,5,5,1); c.fill();
+    c.beginPath(); c.roundRect(3,4,5,5,1); c.fill();
+    // Button
+    c.fillStyle=trim||'#888';
+    c.beginPath(); c.arc(0,2,1.5,0,Math.PI*2); c.fill();
+    // Long sleeves
+    c.fillStyle=oc;
+    if (facing==='left'||facing==='right') {
+      c.fillRect(-15,-5+armSwing,6,14); c.fillRect(9,-5-armSwing,6,14);
+    } else { c.fillRect(-15,-5,6,14); c.fillRect(9,-5,6,14); }
+    return true;
+  }
+
+  function drawCropTop() {
+    // Short top — belly visible
+    c.fillStyle=oc; c.beginPath(); c.roundRect(-9,-6,18,10,4); c.fill();
+    if (trim) { c.fillStyle=trim; c.beginPath(); c.roundRect(-9,-6,18,4,[4,4,0,0]); c.fill(); }
+    // Belly skin patch
+    c.fillStyle=skin; c.beginPath(); c.roundRect(-8,4,16,6,2); c.fill();
+    // Thin straps
+    c.fillStyle=oc; c.fillRect(-6,-8,3,3); c.fillRect(3,-8,3,3);
+    // Bare arms
+    c.fillStyle=skin;
+    if (facing==='left'||facing==='right') {
+      c.fillRect(-13,-4+armSwing,4,11); c.fillRect(9,-4-armSwing,4,11);
+    } else { c.fillRect(-13,-4,4,11); c.fillRect(9,-4,4,11); }
+    return true;
+  }
+
+  function drawGi() {
+    // Martial arts gi — wide, white/coloured with belt
+    c.fillStyle=oc;
+    c.beginPath(); c.moveTo(-10,-6); c.lineTo(-13,24); c.lineTo(13,24); c.lineTo(10,-6); c.closePath(); c.fill();
+    // Crossed lapels
+    c.fillStyle=trim||'#fff';
+    c.beginPath(); c.moveTo(-4,-6); c.lineTo(-9,10); c.lineTo(-6,10); c.lineTo(0,0); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(4,-6); c.lineTo(9,10); c.lineTo(6,10); c.lineTo(0,0); c.closePath(); c.fill();
+    // Belt — coloured, tied in front
+    c.fillStyle=trim||'#333';
+    c.fillRect(-11,10,22,4);
+    // Belt knot
+    c.beginPath(); c.roundRect(-3,9,6,6,2); c.fill();
+    // Wide sleeves (short, pushed up)
+    c.fillStyle=oc;
+    c.fillRect(-14,-4,5,10); c.fillRect(9,-4,5,10);
+    // Bare forearms
+    c.fillStyle=skin; c.fillRect(-14,5,5,6); c.fillRect(9,5,5,6);
+    // Shoes (bare feet / tabi)
+    c.fillStyle='#eee';
+    c.beginPath(); c.roundRect(-8,22,7,4,[0,0,2,2]); c.fill();
+    c.beginPath(); c.roundRect(1,22,7,4,[0,0,2,2]); c.fill();
+  }
+
+  function drawWizard() {
+    // Long pointed wizard robes
+    c.fillStyle=oc;
+    c.beginPath(); c.moveTo(-11,-6); c.lineTo(-15,30); c.lineTo(15,30); c.lineTo(11,-6); c.closePath(); c.fill();
+    // Star/moon pattern patches
+    if (trim) {
+      c.fillStyle=trim;
+      c.font='8px serif'; c.textAlign='center'; c.textBaseline='middle';
+      c.fillText('★',-5,2); c.fillText('☽',5,8); c.fillText('★',0,15);
+    }
+    // Wide flared sleeves
+    c.fillStyle=oc;
+    c.beginPath(); c.moveTo(-9,-4); c.lineTo(-18,14); c.lineTo(-8,10); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(9,-4); c.lineTo(18,14); c.lineTo(8,10); c.closePath(); c.fill();
+    if (trim) {
+      c.fillStyle=trim; c.fillRect(-15,28,30,3);
+      // Collar trim
+      c.beginPath(); c.roundRect(-9,-6,18,4,[3,3,0,0]); c.fill();
+    }
+    // Shoes
+    c.fillStyle='#1a0a00';
+    c.beginPath(); c.roundRect(-8,28,7,4,[0,0,4,4]); c.fill();
+    c.beginPath(); c.roundRect(1,28,7,4,[0,0,4,4]); c.fill();
+  }
+
+  function drawTunic() {
+    // Short medieval-style tunic
+    c.fillStyle=oc;
+    c.beginPath(); c.roundRect(-9,-6,18,20,3); c.fill();
+    // Lace-up V-neck
+    c.fillStyle=trim||skin;
+    c.beginPath(); c.moveTo(-3,-6); c.lineTo(0,1); c.lineTo(3,-6); c.closePath(); c.fill();
+    // Lace dots
+    c.fillStyle=trim||'#8b5e3c';
+    for (let i=0;i<3;i++) { c.beginPath(); c.arc(0,-4+i*2.5,0.8,0,Math.PI*2); c.fill(); }
+    // Rough hem
+    if (trim) {
+      c.fillStyle=trim;
+      c.fillRect(-9,12,18,3);
+    }
+    // Belt
+    c.fillStyle=trim||'#8b5e3c'; c.fillRect(-9,6,18,3);
+    // Short sleeves, rough cut
+    c.fillStyle=oc; c.fillRect(-13,-4,4,8); c.fillRect(9,-4,4,8);
+    c.fillStyle=skin; c.fillRect(-13,4,4,7); c.fillRect(9,4,4,7);
+  }
+
+  function drawLolita() {
+    // Sweet Lolita — bodice + very poofy layered skirt
+    // Poofy petticoat layer (widest, behind)
+    c.fillStyle=(trim||oc)+'99';
+    c.beginPath(); c.moveTo(-12,6); c.lineTo(-18,28); c.lineTo(18,28); c.lineTo(12,6); c.closePath(); c.fill();
+    // Main skirt layer
+    c.fillStyle=oc;
+    c.beginPath(); c.moveTo(-10,6); c.lineTo(-15,26); c.lineTo(15,26); c.lineTo(10,6); c.closePath(); c.fill();
+    // Ruffled hem lines
+    if (trim) {
+      c.fillStyle=trim;
+      c.fillRect(-15,21,30,2); c.fillRect(-14,24,28,2);
+    }
+    // Bodice with decorative yoke
+    c.fillStyle=oc; c.beginPath(); c.roundRect(-9,-6,18,13,3); c.fill();
+    c.fillStyle=trim||'#fff'; c.beginPath(); c.roundRect(-9,-6,18,5,[3,3,0,0]); c.fill();
+    // Bow at waist centre
+    c.fillStyle=trim||oc;
+    c.beginPath(); c.moveTo(-4,5); c.lineTo(0,8); c.lineTo(4,5); c.lineTo(0,2); c.closePath(); c.fill();
+    // Puff sleeves
+    c.fillStyle=oc;
+    c.beginPath(); c.ellipse(-13,-1,6,5,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(13,-1,6,5,0,0,Math.PI*2); c.fill();
+    // Lace cuffs
+    c.fillStyle=trim||'#fff';
+    c.fillRect(-16,3,6,2); c.fillRect(10,3,6,2);
+    // Shoes
+    c.fillStyle='#1a0a00';
+    c.beginPath(); c.roundRect(-8,25,7,4,[0,0,2,2]); c.fill();
+    c.beginPath(); c.roundRect(1,25,7,4,[0,0,2,2]); c.fill();
+    // Arms
+    c.fillStyle=skin; c.fillRect(-15,2,5,8); c.fillRect(10,2,5,8);
+  }
+
+  function drawTankTop() {
+    // Fitted tank top, wide straps
+    c.fillStyle=oc; c.beginPath(); c.roundRect(-8,-6,16,18,3); c.fill();
+    // Strap sides
+    c.fillStyle=oc; c.fillRect(-9,-8,4,4); c.fillRect(5,-8,4,4);
+    if (trim) {
+      c.fillStyle=trim;
+      c.beginPath(); c.roundRect(-8,-6,16,4,[3,3,0,0]); c.fill();
+    }
+    // Ribbed texture lines
+    c.strokeStyle=(trim||oc)+'88'; c.lineWidth=0.8;
+    for (let i=0;i<4;i++) {
+      c.beginPath(); c.moveTo(-7,0+i*3); c.lineTo(7,0+i*3); c.stroke();
+    }
+    // Bare arms
+    c.fillStyle=skin;
+    if (facing==='left'||facing==='right') {
+      c.fillRect(-13,-4+armSwing,4,13); c.fillRect(9,-4-armSwing,4,13);
+    } else { c.fillRect(-13,-4,4,13); c.fillRect(9,-4,4,13); }
+    return true;
+  }
+
+  function drawMilitary() {
+    // Military jacket — olive/fitted with patches
+    c.fillStyle=oc; c.beginPath(); c.roundRect(-10,-6,20,18,3); c.fill();
+    // Chest pockets
+    c.fillStyle=oc+'cc';
+    c.beginPath(); c.roundRect(-8,-2,6,5,1); c.fill();
+    c.beginPath(); c.roundRect(2,-2,6,5,1); c.fill();
+    // Shoulder epaulettes
+    c.fillStyle=trim||'#ffd700';
+    c.beginPath(); c.roundRect(-11,-7,5,4,1); c.fill();
+    c.beginPath(); c.roundRect(6,-7,5,4,1); c.fill();
+    // Collar
+    c.fillStyle=oc;
+    c.beginPath(); c.roundRect(-6,-8,12,4,2); c.fill();
+    // Button row
+    c.fillStyle=trim||'#888';
+    for (let i=0;i<4;i++) { c.beginPath(); c.arc(0,-4+i*4,1,0,Math.PI*2); c.fill(); }
+    // Badge on chest
+    if (trim) {
+      c.fillStyle=trim; c.font='6px serif'; c.textAlign='center'; c.textBaseline='middle';
+      c.fillText('★',-5,1);
+    }
+    // Long sleeves
+    c.fillStyle=oc;
+    if (facing==='left'||facing==='right') {
+      c.fillRect(-15,-5+armSwing,6,14); c.fillRect(9,-5-armSwing,6,14);
+    } else { c.fillRect(-15,-5,6,14); c.fillRect(9,-5,6,14); }
+    // Cuff stripe
+    if (trim) {
+      c.fillStyle=trim;
+      if (facing==='left'||facing==='right') {
+        c.fillRect(-15,6+armSwing,6,2); c.fillRect(9,6-armSwing,6,2);
+      } else { c.fillRect(-15,6,6,2); c.fillRect(9,6,6,2); }
+    }
+    return true;
+  }
+
+  function drawMermaid() {
+    // Fitted bodice
+    c.fillStyle=oc; c.beginPath(); c.roundRect(-9,-6,18,14,3); c.fill();
+    // Mermaid tail — narrow at top, flares at bottom like a fin
+    c.fillStyle=oc;
+    c.beginPath();
+    c.moveTo(-9,8); c.lineTo(-10,20); c.lineTo(-15,30); c.lineTo(15,30); c.lineTo(10,20); c.lineTo(9,8);
+    c.closePath(); c.fill();
+    // Tail fin flare
+    c.fillStyle=trim||oc;
+    c.beginPath(); c.moveTo(-15,27); c.quadraticCurveTo(-18,34,-10,32); c.lineTo(-8,28); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(15,27); c.quadraticCurveTo(18,34,10,32); c.lineTo(8,28); c.closePath(); c.fill();
+    // Scale shimmer lines
+    c.strokeStyle=(trim||'#fff')+'55'; c.lineWidth=0.8;
+    for (let row=0;row<4;row++) {
+      for (let col=-2;col<=2;col++) {
+        c.beginPath(); c.arc(col*4, 10+row*5, 2, 0, Math.PI); c.stroke();
+      }
+    }
+    // Sparkle trim on bodice
+    if (trim) {
+      c.fillStyle=trim; c.beginPath(); c.roundRect(-9,-6,18,4,[3,3,0,0]); c.fill();
+    }
+    // Off-shoulder straps / bare shoulder look
+    c.fillStyle=skin; c.fillRect(-13,-4,4,10); c.fillRect(9,-4,4,10);
+  }
+
+  // ── DRAW ORDER ───────────────────────────────────────
+  // Draw cape first (behind body)
+  if (os.draw === 'cape') drawCape();
+
+  // Draw outfit body
+  let armsHandled = false;
+  if      (os.draw==='tshirt')    { drawTShirt(); }
+  else if (os.draw==='hoodie')    { armsHandled = drawHoodie(); }
+  else if (os.draw==='dress')     { drawDress(); armsHandled=true; }
+  else if (os.draw==='longdress') { drawLongDress(); armsHandled=true; }
+  else if (os.draw==='robe')      { drawRobe(); armsHandled=true; }
+  else if (os.draw==='armour')    { armsHandled = drawArmour(); }
+  else if (os.draw==='kimono')    { drawKimono(); armsHandled=true; }
+  else if (os.draw==='overalls')  { armsHandled = drawOveralls(); }
+  else if (os.draw==='vest')      { armsHandled = drawVest(); }
+  else if (os.draw==='tracksuit') { armsHandled = drawTracksuit(); }
+  else if (os.draw==='jacket')    { armsHandled = drawJacket(); }
+  else if (os.draw==='croptop')   { armsHandled = drawCropTop(); }
+  else if (os.draw==='gi')        { drawGi(); armsHandled=true; }
+  else if (os.draw==='wizard')    { drawWizard(); armsHandled=true; }
+  else if (os.draw==='tunic')     { drawTunic(); }
+  else if (os.draw==='lolita')    { drawLolita(); armsHandled=true; }
+  else if (os.draw==='tanktop')   { armsHandled = drawTankTop(); }
+  else if (os.draw==='military')  { armsHandled = drawMilitary(); }
+  else if (os.draw==='mermaid')   { drawMermaid(); armsHandled=true; }
+  // cape already drawn above, arms handled below
+
+  // Default arms if not handled by outfit
+  if (!armsHandled && os.draw !== 'cape') {
+    c.fillStyle=skin;
+    if (facing==='left'||facing==='right') {
+      c.fillRect(-13,-4+armSwing,5,10); c.fillRect(8,-4-armSwing,5,10);
+    } else { c.fillRect(-13,-4,5,10); c.fillRect(8,-4,5,10); }
+  }
+
+  // Pants (only if outfit doesn't hide them)
+  if (!os.hidePants) {
+    c.fillStyle=pants;
+    c.beginPath(); c.roundRect(-8,9-ls*0.3,7,10,[0,0,3,3]); c.fill();
+    c.beginPath(); c.roundRect(1,9+ls*0.3,7,10,[0,0,3,3]); c.fill();
+    // Shoes
+    c.fillStyle='#2a2a2a';
+    c.beginPath(); c.roundRect(-9,17,9,5,[0,0,3,3]); c.fill();
+    c.beginPath(); c.roundRect(0,17,9,5,[0,0,3,3]); c.fill();
+  }
+
+  // ── HEAD ─────────────────────────────────────────────
+  c.fillStyle=skin; c.beginPath(); c.roundRect(-9,-22,18,18,5); c.fill();
+
+  // Hair
+  if (!hs.bald) {
+    c.fillStyle=hair;
+    c.beginPath(); c.roundRect(-9,-22,18,7,[5,5,0,0]); c.fill();
+    if (hs.tuft||hs.fringe) { c.beginPath(); c.roundRect(-3,-26,6,6,3); c.fill(); }
+    if (hs.long) {
+      c.beginPath(); c.roundRect(-11,-22,4,22,2); c.fill();
+      c.beginPath(); c.roundRect(7,-22,4,22,2); c.fill();
+    }
+    if (hs.curly) {
+      [-6,-1,4].forEach(ox=>{ c.beginPath(); c.arc(ox,-25,4,0,Math.PI*2); c.fill(); });
+    }
+    if (hs.bun) {
+      c.beginPath(); c.arc(0,-27,5,0,Math.PI*2); c.fill();
+      c.fillStyle=hair+'bb'; c.beginPath(); c.arc(0,-27,3,0,Math.PI*2); c.fill();
+    }
+    if (hs.fringe) {
+      c.fillStyle=hair; c.beginPath(); c.roundRect(-9,-17,18,5,2); c.fill();
+    }
+    if (hs.pigtails) {
+      // Two side buns
+      c.fillStyle=hair;
+      c.beginPath(); c.arc(-11,-18,5,0,Math.PI*2); c.fill();
+      c.beginPath(); c.arc(11,-18,5,0,Math.PI*2); c.fill();
+      // Ties
+      c.fillStyle='#ff69b4';
+      c.beginPath(); c.arc(-11,-18,2,0,Math.PI*2); c.fill();
+      c.beginPath(); c.arc(11,-18,2,0,Math.PI*2); c.fill();
+    }
+    if (hs.ponytail) {
+      // Base + tail hanging back
+      c.fillStyle=hair;
+      c.beginPath(); c.roundRect(-9,-22,18,7,[5,5,0,0]); c.fill();
+      c.beginPath(); c.roundRect(5,-24,5,16,2); c.fill();
+      // Scrunchie
+      c.fillStyle='#ff69b4'; c.beginPath(); c.arc(7,-17,3,0,Math.PI*2); c.fill();
+    }
+    if (hs.afro) {
+      c.fillStyle=hair;
+      // Big round afro shape
+      c.beginPath(); c.arc(0,-24,12,0,Math.PI*2); c.fill();
+      // Slightly darker inner for depth
+      c.fillStyle=hair+'cc';
+      c.beginPath(); c.arc(0,-24,8,0,Math.PI*2); c.fill();
+    }
+    if (hs.spiky) {
+      c.fillStyle=hair;
+      // Base
+      c.beginPath(); c.roundRect(-9,-22,18,5,[5,5,0,0]); c.fill();
+      // Spikes upward
+      [[-7,-22],[-3,-27],[1,-29],[5,-26],[8,-23]].forEach(([sx,sy])=>{
+        c.beginPath(); c.moveTo(sx-3,-18); c.lineTo(sx,sy); c.lineTo(sx+3,-18); c.closePath(); c.fill();
+      });
+    }
+    if (hs.bob) {
+      // Short sides hanging at jaw level
+      c.fillStyle=hair;
+      c.beginPath(); c.roundRect(-11,-22,5,18,2); c.fill();
+      c.beginPath(); c.roundRect(6,-22,5,18,2); c.fill();
+      c.beginPath(); c.roundRect(-9,-22,18,7,[5,5,0,0]); c.fill();
+      // Blunt bottom edge
+      c.beginPath(); c.roundRect(-11,-6,22,3,1); c.fill();
+    }
+    if (hs.mohawk) {
+      c.fillStyle=hair;
+      // Shaved sides (skin tone)
+      c.fillStyle=skin; c.fillRect(-9,-22,5,8); c.fillRect(4,-22,5,8);
+      // Central strip
+      c.fillStyle=hair;
+      c.beginPath(); c.roundRect(-3,-22,6,8,2); c.fill();
+      // Spiky strip upward
+      [[-1,-22],[0,-28],[1,-22]].forEach((_,i,pts)=>{
+        if (i===0) { c.beginPath(); c.moveTo(pts[0][0]-2,-18); c.lineTo(pts[1][0],pts[1][1]); c.lineTo(pts[2][0]+2,-18); c.closePath(); c.fill(); }
+      });
+      c.beginPath(); c.moveTo(-3,-18); c.lineTo(0,-30); c.lineTo(3,-18); c.closePath(); c.fill();
+    }
+    if (hs.twinbuns) {
+      c.fillStyle=hair;
+      c.beginPath(); c.roundRect(-9,-22,18,6,[5,5,0,0]); c.fill();
+      // Two buns on top
+      c.beginPath(); c.arc(-5,-26,5,0,Math.PI*2); c.fill();
+      c.beginPath(); c.arc(5,-26,5,0,Math.PI*2); c.fill();
+      // Highlights
+      c.fillStyle=hair+'88';
+      c.beginPath(); c.arc(-4,-27,2,0,Math.PI*2); c.fill();
+      c.beginPath(); c.arc(6,-27,2,0,Math.PI*2); c.fill();
+    }
+    if (hs.braids) {
+      c.fillStyle=hair;
+      c.beginPath(); c.roundRect(-9,-22,18,7,[5,5,0,0]); c.fill();
+      // Two braided tails (zigzag pattern)
+      [-1,1].forEach(side=>{
+        const bx = side * 8;
+        for (let i=0; i<5; i++) {
+          c.fillStyle = i%2===0 ? hair : hair+'99';
+          c.beginPath(); c.ellipse(bx, -18+i*4, 2.5, 2, 0, 0, Math.PI*2); c.fill();
+        }
+      });
+    }
+  }
+
+  // Face
+  if (facing!=='up') {
+    // Eye drawing helper
+    function drawEyePair(lx, rx, ey, rx_w, ry_h, irisColor) {
+      c.fillStyle='#222';
+      c.beginPath(); c.ellipse(lx,ey,rx_w,ry_h,0,0,Math.PI*2); c.fill();
+      c.beginPath(); c.ellipse(rx,ey,rx_w,ry_h,0,0,Math.PI*2); c.fill();
+      if (irisColor) {
+        c.fillStyle=irisColor;
+        c.beginPath(); c.ellipse(lx,ey,rx_w*0.6,ry_h*0.6,0,0,Math.PI*2); c.fill();
+        c.beginPath(); c.ellipse(rx,ey,rx_w*0.6,ry_h*0.6,0,0,Math.PI*2); c.fill();
+      }
+      // Shine
+      c.fillStyle='#fff';
+      c.beginPath(); c.ellipse(lx+1,ey-1,Math.max(0.5,rx_w*0.35),Math.max(0.5,ry_h*0.35),0,0,Math.PI*2); c.fill();
+      c.beginPath(); c.ellipse(rx+1,ey-1,Math.max(0.5,rx_w*0.35),Math.max(0.5,ry_h*0.35),0,0,Math.PI*2); c.fill();
+    }
+
+    if (eyes==='round')   drawEyePair(-3,3,-12,2.5,3,null);
+    else if (eyes==='narrow') {
+      c.fillStyle='#222';
+      c.beginPath(); c.ellipse(-3,-11.5,3,1.5,0,0,Math.PI*2); c.fill();
+      c.beginPath(); c.ellipse(3,-11.5,3,1.5,0,0,Math.PI*2); c.fill();
+    }
+    else if (eyes==='wide')    drawEyePair(-3,3,-12,3,4,null);
+    else if (eyes==='blue')    drawEyePair(-3,3,-12,2.5,3,'#3399ff');
+    else if (eyes==='green')   drawEyePair(-3,3,-12,2.5,3,'#33cc66');
+    else if (eyes==='red')     drawEyePair(-3,3,-12,2.5,3,'#dd3333');
+    else if (eyes==='purple')  drawEyePair(-3,3,-12,2.5,3,'#9933cc');
+    else if (eyes==='star') {
+      c.font='7px serif'; c.textAlign='center'; c.textBaseline='middle';
+      c.fillStyle='#fbbf24'; c.fillText('★',-3,-12); c.fillText('★',3,-12);
+    }
+    else if (eyes==='happy') {
+      // Happy closed arc eyes
+      c.strokeStyle='#222'; c.lineWidth=1.5; c.lineCap='round';
+      c.beginPath(); c.arc(-3,-11,3,-Math.PI,0); c.stroke();
+      c.beginPath(); c.arc(3,-11,3,-Math.PI,0); c.stroke();
+    }
+    else if (eyes==='angry') {
+      // Angry slanted brows + narrow eyes
+      c.fillStyle='#222';
+      c.beginPath(); c.ellipse(-3,-11.5,3,1.5,0.3,0,Math.PI*2); c.fill();
+      c.beginPath(); c.ellipse(3,-11.5,3,1.5,-0.3,0,Math.PI*2); c.fill();
+      // Angry brows
+      c.strokeStyle='#222'; c.lineWidth=1.5; c.lineCap='round';
+      c.beginPath(); c.moveTo(-6,-15); c.lineTo(-1,-13); c.stroke();
+      c.beginPath(); c.moveTo(6,-15); c.lineTo(1,-13); c.stroke();
+    }
+    else if (eyes==='sleepy') {
+      // Half-closed droopy eyes
+      c.fillStyle='#222';
+      c.beginPath(); c.ellipse(-3,-12,2.5,1.5,0,0,Math.PI*2); c.fill();
+      c.beginPath(); c.ellipse(3,-12,2.5,1.5,0,0,Math.PI*2); c.fill();
+      // Droopy lid lines
+      c.strokeStyle='#a0522d'; c.lineWidth=1.2;
+      c.beginPath(); c.moveTo(-5.5,-13); c.lineTo(-0.5,-13); c.stroke();
+      c.beginPath(); c.moveTo(0.5,-13); c.lineTo(5.5,-13); c.stroke();
+    }
+    else if (eyes==='puppy') {
+      // Big shiny puppy eyes
+      drawEyePair(-3,3,-11.5,3.5,4.5,null);
+      // Extra large shine
+      c.fillStyle='rgba(255,255,255,0.9)';
+      c.beginPath(); c.ellipse(-2,-13,2,2.5,0,0,Math.PI*2); c.fill();
+      c.beginPath(); c.ellipse(4,-13,2,2.5,0,0,Math.PI*2); c.fill();
+    }
+    else if (eyes==='sparkle') {
+      drawEyePair(-3,3,-12,2.5,3,'#a855f7');
+      // Sparkle dots around eyes
+      c.fillStyle='#fbbf24';
+      [[-6,-15],[-1,-15],[5,-15],[-7,-11],[6,-11]].forEach(([sx,sy])=>{
+        c.beginPath(); c.arc(sx,sy,0.8,0,Math.PI*2); c.fill();
+      });
+    }
+    else if (eyes==='diamond') {
+      // Diamond-shaped eyes
+      c.fillStyle='#222';
+      [-3,3].forEach(ex=>{
+        c.beginPath(); c.moveTo(ex,-15); c.lineTo(ex+2.5,-12); c.lineTo(ex,-9); c.lineTo(ex-2.5,-12); c.closePath(); c.fill();
+        c.fillStyle='#7dd3fc';
+        c.beginPath(); c.moveTo(ex,-14); c.lineTo(ex+1.5,-12); c.lineTo(ex,-10); c.lineTo(ex-1.5,-12); c.closePath(); c.fill();
+        c.fillStyle='#fff';
+        c.beginPath(); c.arc(ex,-13,0.8,0,Math.PI*2); c.fill();
+        c.fillStyle='#222';
+      });
+    }
+    else if (eyes==='spiral') {
+      // Swirly dizzy eyes
+      c.strokeStyle='#222'; c.lineWidth=1.2;
+      [-3,3].forEach(ex=>{
+        c.beginPath();
+        for (let a=0; a<Math.PI*3; a+=0.15) {
+          const r=a/4; const px=ex+Math.cos(a)*r, py=-12+Math.sin(a)*r;
+          a===0 ? c.moveTo(px,py) : c.lineTo(px,py);
+        }
+        c.stroke();
+      });
+    }
+
+    // Smile / mouth
+    c.strokeStyle='#a0522d'; c.lineWidth=1.2; c.lineCap='round';
+    if (eyes==='angry') {
+      // Frown for angry
+      c.beginPath(); c.arc(0,-6,3.5,Math.PI+0.3,-0.3); c.stroke();
+    } else if (eyes==='happy' || eyes==='puppy') {
+      // Big smile
+      c.beginPath(); c.arc(0,-7,4,0.1,Math.PI-0.1); c.stroke();
+    } else {
+      c.beginPath(); c.arc(0,-8,3.5,0.2,Math.PI-0.2); c.stroke();
+    }
+  } else {
+    if (!hs.bald) {
+      c.fillStyle=hair; c.beginPath(); c.roundRect(-9,-22,18,12,[5,5,0,0]); c.fill();
+    }
+    // Backpack
+    c.fillStyle='#e07b3a'; c.beginPath(); c.roundRect(-13,-4,6,12,2); c.fill();
+  }
+
+  // Accessory
+  if (acc.icon) {
+    c.font='13px serif'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillText(acc.icon, 0, -30);
+  }
+}
+
+// — dimensions 1-8: fixed base worlds
+// — dimensions 9+: procedurally generated hybrids
+// ═══════════════════════════════════════════════════════
+
+// Cache of generated worlds so dim 9 always looks the same
+const _worldCache = new Map();
+
+function lerpHex(a, b, t) {
+  const ah = parseInt(a.replace('#',''),16), bh = parseInt(b.replace('#',''),16);
+  const ar=(ah>>16)&255, ag=(ah>>8)&255, ab=ah&255;
+  const br=(bh>>16)&255, bg=(bh>>8)&255, bb=bh&255;
+  const r=Math.round(ar+(br-ar)*t), g=Math.round(ag+(bg-ag)*t), bl=Math.round(ab+(bb-ab)*t);
+  return '#'+(r<16?'0':'')+r.toString(16)+(g<16?'0':'')+g.toString(16)+(bl<16?'0':'')+bl.toString(16);
+}
+
+const HYBRID_ADJECTIVES = ['Forgotten','Shimmering','Ancient','Hollow','Drifting','Crimson','Pale','Twisted','Silent','Blazing','Wandering','Mirrored','Frozen','Golden','Echoing','Sunken'];
+const HYBRID_NOUNS      = ['Expanse','Veil','Passage','Hollow','Reach','Crossing','Rift','Archive','Cradle','Breach','Remnant','Circuit','Tide','Canopy','Spire','Wellspring'];
+
+function generateHybridWorld(dim) {
+  if (_worldCache.has(dim)) return _worldCache.get(dim);
+
+  // Stable RNG for this dimension
+  let seed = dim * 2654435761;
+  const rng = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 0xffffffff; };
+
+  // Pick two base worlds to blend
+  const idxA = Math.floor(rng() * WORLDS.length);
+  let idxB = Math.floor(rng() * (WORLDS.length - 1));
+  if (idxB >= idxA) idxB++;
+  const wA = WORLDS[idxA], wB = WORLDS[idxB];
+  const t = 0.3 + rng() * 0.4; // blend ratio
+
+  // Name
+  const adj  = HYBRID_ADJECTIVES[Math.floor(rng() * HYBRID_ADJECTIVES.length)];
+  const noun = HYBRID_NOUNS[Math.floor(rng() * HYBRID_NOUNS.length)];
+  const name = `${adj} ${noun}`;
+  const badge = `D${dim}`;
+
+  // Colours — lerp between the two parents
+  const accent    = lerpHex(wA.accent,    wB.accent,    t);
+  const badgeBg   = lerpHex(wA.badgeBg,  wB.badgeBg,   t);
+  const groundColor = lerpHex(wA.groundColor, wB.groundColor, t);
+
+  // Palette — interleave from both parents
+  const palette = wA.palette.map((c,i) => lerpHex(c, wB.palette[i % wB.palette.length], t));
+
+  // Resources — mix from both parents (4 from A, 4 from B, deduplicated)
+  const resPool = [...wA.resources, ...wB.resources];
+  const usedIds = new Set();
+  const resources = [];
+  const shuffled = resPool.sort(() => rng() - 0.5);
+  for (const r of shuffled) {
+    if (!usedIds.has(r.id) && resources.length < 6) { usedIds.add(r.id); resources.push(r); }
+  }
+
+  // Particle colours
+  const particleColors = [...wA.particleColors.slice(0,2), ...wB.particleColors.slice(0,2)];
+
+  // Obstacle style
+  const useObstacleFrom = rng() < 0.5 ? wA : wB;
+
+  // Music theme — pick one of the two parents' music keys
+  const music = rng() < 0.5 ? wA.music : wB.music;
+
+  // Obstacle rate scales up gently with dimension (capped)
+  const obstacleRate = Math.min(0.14, 0.06 + (dim - 8) * 0.005);
+
+  // Portal key recipe: pick 3 resources from this world's pool
+  const keyResources = resources.slice(0, 3);
+  const keyIngredients = {};
+  keyResources.forEach((r, i) => { keyIngredients[r.id] = 2 + i; });
+
+  // ── Procedural world effect ──────────────────────────
+  // ~55% of hybrid worlds get a fog or darkness effect
+  const effectRoll = rng();
+  let proceduralGoal = null;
+
+  const FOG_DESCS = [
+    `A swirling dimensional mist clouds the ${name}. Craft a beacon to clear the way!`,
+    `Strange vapours drift through the ${name}. Craft a purifier to see clearly!`,
+    `Ghostly fog drifts through the rift. Craft a lens to pierce the veil!`,
+    `An otherworldly haze fills the ${name}. Craft a ward to dispel it!`,
+    `Dimensional static blurs your vision. Craft a prism to restore sight!`,
+  ];
+  const DARK_DESCS = [
+    `The ${name} is shrouded in darkness. Craft a lantern to illuminate your path!`,
+    `No light reaches this dimension. Craft a glowstone to see what lies ahead!`,
+    `The void swallows all light here. Craft a torch to push back the dark!`,
+    `Eternal twilight blankets the ${name}. Craft a light source to explore safely!`,
+    `This dimension hides in shadow. Craft a beacon to reveal its secrets!`,
+  ];
+
+  if (effectRoll < 0.28) {
+    // Fog world (permanent:false — clears once solved)
+    const descIdx = Math.floor(rng() * FOG_DESCS.length);
+    const craftRes = resources[Math.floor(rng() * Math.min(3, resources.length))];
+    const craftRes2 = resources[Math.floor(rng() * resources.length)];
+    const craftIngredients = { [craftRes.id]: 3 };
+    if (craftRes2.id !== craftRes.id) craftIngredients[craftRes2.id] = 2;
+    proceduralGoal = {
+      id: `fog_dim${dim}`,
+      desc: FOG_DESCS[descIdx],
+      unlocks: 'fog',
+      permanent: false,
+      craftName: `${name} Lens`,
+      craftId: `goal_item_dim${dim}`,
+      ingredients: craftIngredients,
+      resultIcon: '🔭',
+    };
+  } else if (effectRoll < 0.55) {
+    // Darkness world (permanent:true — resets every visit)
+    const descIdx = Math.floor(rng() * DARK_DESCS.length);
+    const craftRes = resources[Math.floor(rng() * Math.min(3, resources.length))];
+    const craftRes2 = resources[Math.floor(rng() * resources.length)];
+    const craftIngredients = { [craftRes.id]: 3 };
+    if (craftRes2.id !== craftRes.id) craftIngredients[craftRes2.id] = 2;
+    proceduralGoal = {
+      id: `dark_dim${dim}`,
+      desc: DARK_DESCS[descIdx],
+      unlocks: 'light',
+      permanent: true,
+      craftName: `${name} Lantern`,
+      craftId: `goal_item_dim${dim}`,
+      ingredients: craftIngredients,
+      resultIcon: '🕯️',
+    };
+  }
+
+  const world = {
+    id: `dim_${dim}`,
+    name, badge,
+    accent, badgeBg, badgeText: '#fff',
+    desc: `A strange hybrid realm blending the essence of ${wA.name} and ${wB.name}.`,
+    music,
+    resources,
+    palette,
+    groundColor,
+    particleColors,
+    obstacleColor: useObstacleFrom.obstacleColor,
+    obstacleIcon:  useObstacleFrom.obstacleIcon,
+    obstacleRate,
+    portalRecipe: {
+      id: `pk_dim${dim}`,
+      name: `${name} Portal Key`,
+      icon: '🗝️',
+      desc: `Opens a rift from the ${name}.`,
+      ingredients: keyIngredients,
+      category: 'portal',
+    },
+    proceduralGoal,   // null = always clear, otherwise fog or darkness
+    isProceduralWorld: true,
+  };
+
+  _worldCache.set(dim, world);
+  return world;
+}
+
+// THE master accessor — use this everywhere instead of WORLDS[state.worldIndex]
+// dim is 1-based (dimension 1 = WORLDS[0])
+function getWorld(dim) {
+  if (dim >= 1 && dim <= WORLDS.length) return WORLDS[dim - 1];
+  return generateHybridWorld(dim);
+}
+
+// Current world shorthand
+function currentWorld() { return getWorld(state.worldIndex); }
+
+// Get all recipes for a world (base + any procedural portal key)
+function getWorldRecipes(dim) {
+  const world = getWorld(dim);
+  if (!world.isProceduralWorld) {
+    return RECIPES.filter(r => r.worldId === WORLDS[dim-1].id);
+  }
+  // Procedural world: portal key + goal craft item (if any) + 2 keepsakes
+  const pk = world.portalRecipe;
+  const res = world.resources;
+  const recipes = [pk];
+
+  // Goal craft item — appears first so players see it right away
+  if (world.proceduralGoal) {
+    const g = world.proceduralGoal;
+    recipes.push({
+      id: `goal_item_dim${dim}`,
+      name: g.craftName,
+      icon: g.resultIcon,
+      desc: g.unlocks === 'light'
+        ? `Illuminates dark dimensions. Carry it in your bag and use it on any visit.`
+        : `Dispels dimensional mist. Carry it in your bag — fog worlds clear on use.`,
+      ingredients: g.ingredients,
+      result: { id: `goal_item_dim${dim}_result`, name: g.craftName, icon: g.resultIcon },
+      category: 'keepsake',
+      isGoalCraft: true,
+    });
+  }
+
+  const keepsake1 = {
+    id:`ks1_dim${dim}`, name:`${world.name} Charm`, icon:'✨',
+    desc:'A memento of this strange dimension.',
+    ingredients:{ [res[0].id]:3, [res[1]?.id||res[0].id]:2 },
+    result:{id:`charm_dim${dim}`,name:`${world.name} Charm`,icon:'✨'},
+    category:'keepsake',
+  };
+  const keepsake2 = {
+    id:`ks2_dim${dim}`, name:`${world.name} Crystal`, icon:'💠',
+    desc:'A crystallised fragment of dimensional energy.',
+    ingredients:{ [res[2]?.id||res[0].id]:4, [res[3]?.id||res[1]?.id||res[0].id]:2 },
+    result:{id:`crystal_dim${dim}`,name:`${world.name} Crystal`,icon:'💠'},
+    category:'keepsake',
+  };
+  return [...recipes, keepsake1, keepsake2];
+}
+
+// ═══════════════════════════════════════════════════════
+// STATE + SAVE SYSTEM
+// state.worldIndex is now 1-based dimension number (1 = Sunlit Meadow)
+// ═══════════════════════════════════════════════════════
+const SAVE_KEY = 'worldhopper_save_v5';
+
+// Repair a loaded crafted array — re-derive effect/forWorldId from recipe definitions
+// so old saves that predate these fields still work correctly
+function migrateCraftedItems(crafted) {
+  // Build a lookup of recipeId → { effect, unlocks } from RECIPES + WORLD_GOALS
+  const recipeEffects = {};
+  RECIPES.forEach(r => {
+    if (r.category === 'keepsake' || r.category === 'portal') {
+      // Check if this recipe is the goal item for any world
+      Object.entries(WORLD_GOALS).forEach(([worldId, goal]) => {
+        if (goal.craftId === r.id) {
+          recipeEffects[r.id] = { effect: goal.unlocks, worldId, worldName: WORLDS.find(w=>w.id===worldId)?.name || worldId };
+        }
+      });
+    }
+  });
+
+  return crafted.map(c => {
+    // Already fully populated — leave alone
+    if (c.forWorldId && c.effect !== undefined) return c;
+    // Try to find effect from recipe lookup
+    const found = recipeEffects[c.id];
+    return {
+      ...c,
+      effect:       c.effect      ?? (found ? found.effect    : null),
+      forWorldId:   c.forWorldId  ?? (found ? found.worldId   : null),
+      forWorldName: c.forWorldName ?? (found ? found.worldName : null),
+    };
+  });
+}
+function defaultState() {
+  return { worldIndex:1, dimensionCount:1, inventory:{}, crafted:[], portalKeyCount:0, transitioning:false, worldsVisited:[1], goalsComplete:{}, equippedIdx:null, lightOn:{} };
+}
+let state = defaultState();
+
+function saveGame() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      worldIndex:state.worldIndex, dimensionCount:state.dimensionCount,
+      inventory:state.inventory, crafted:state.crafted,
+      portalKeyCount:state.portalKeyCount, worldsVisited:state.worldsVisited,
+      goalsComplete:state.goalsComplete, equippedIdx:state.equippedIdx,
+      lightOn:state.lightOn,
+    }));
+    document.getElementById('save-dot').style.background = 'rgba(100,220,150,0.9)';
+    setTimeout(() => { document.getElementById('save-dot').style.background = 'rgba(100,220,150,0.5)'; }, 1000);
+  } catch(e) {}
+}
+function loadGame() {
+  try {
+    // Try v5 first, fall back to v4 so players don't lose progress
+    const raw = localStorage.getItem(SAVE_KEY) || localStorage.getItem('worldhopper_save_v4');
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    state.worldIndex = s.worldIndex || 1;
+    state.dimensionCount = s.dimensionCount || 1;
+    state.inventory = s.inventory || {};
+    state.crafted = migrateCraftedItems(s.crafted || []);
+    state.portalKeyCount = s.portalKeyCount || 0;
+    state.worldsVisited = s.worldsVisited || [1];
+    state.goalsComplete = s.goalsComplete || {};
+    state.equippedIdx = s.equippedIdx ?? null;
+    state.lightOn = s.lightOn || {};
+    showToast('💾 Game loaded!');
+  } catch(e) { state = defaultState(); }
+}
+let saveTimer;
+function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(saveGame, 1500); }
+
+// ═══════════════════════════════════════════════════════
+// MUSIC — Rich generative engine: chords + melody + rhythm + reverb
+// ═══════════════════════════════════════════════════════
+let audioCtx = null, musicOn = false;
+let musicNodes = [];
+let currentMusicWorld = null;
+let musicLoopTimer = null;
+
+function initAudio() {
+  if (audioCtx) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch(e) { console.warn('Web Audio not available'); }
+}
+
+function stopAllMusic() {
+  if (musicLoopTimer) { clearTimeout(musicLoopTimer); musicLoopTimer = null; }
+  musicNodes.forEach(n => { try { n.stop(audioCtx.currentTime + 0.3); } catch(e){} });
+  musicNodes = [];
+  currentMusicWorld = null;
+}
+
+// Music themes — simpler, just notes and timing
+const MUSIC_THEMES = {
+  meadow:   { notes:[261,330,392,523,659],     bass:130, bpm:100, wave:'sine',     vol:0.18 },
+  crystal:  { notes:[220,277,330,440,554],     bass:110, bpm:72,  wave:'triangle', vol:0.16 },
+  tropics:  { notes:[294,370,440,587,740],     bass:147, bpm:108, wave:'sine',     vol:0.18 },
+  autumn:   { notes:[247,311,370,494,622],     bass:123, bpm:80,  wave:'triangle', vol:0.16 },
+  sky:      { notes:[330,415,494,659,830],     bass:165, bpm:88,  wave:'sine',     vol:0.18 },
+  volcano:  { notes:[196,247,294,392,494],     bass:98,  bpm:112, wave:'triangle', vol:0.16 },
+  snow:     { notes:[277,370,440,554,740],     bass:138, bpm:60,  wave:'sine',     vol:0.16 },
+  mushroom: { notes:[233,293,349,466,587],     bass:116, bpm:84,  wave:'triangle', vol:0.16 },
+};
+
+function makeNote(freq, vol, wave, startTime, duration) {
+  if (!audioCtx) return null;
+  try {
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const now  = audioCtx.currentTime;
+    const st   = Math.max(now + 0.01, startTime);
+    const end  = st + duration;
+
+    osc.type = wave;
+    osc.frequency.value = freq;
+
+    gain.gain.setValueAtTime(0.001, st);
+    gain.gain.linearRampToValueAtTime(vol, st + Math.min(0.1, duration * 0.2));
+    gain.gain.setValueAtTime(vol * 0.7, end - Math.min(0.15, duration * 0.3));
+    gain.gain.linearRampToValueAtTime(0.001, end);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(st);
+    osc.stop(end + 0.05);
+    musicNodes.push(osc);
+    return osc;
+  } catch(e) { return null; }
+}
+
+function playWorldMusic(worldId) {
+  if (!musicOn || !audioCtx) return;
+  if (currentMusicWorld === worldId) return;
+  stopAllMusic();
+  currentMusicWorld = worldId;
+
+  const T = MUSIC_THEMES[worldId] || MUSIC_THEMES.meadow;
+  const beat = 60 / T.bpm;
+  const notes = T.notes;
+
+  function playLoop() {
+    if (!musicOn || currentMusicWorld !== worldId) return;
+    const now = audioCtx.currentTime;
+
+    // Bass drone — long held note
+    makeNote(T.bass, T.vol * 0.6, 'sine', now, beat * 8);
+
+    // Chord pattern — 4 notes spaced across 8 beats
+    const chordNotes = [notes[0], notes[1], notes[2], notes[3]];
+    chordNotes.forEach((freq, i) => {
+      makeNote(freq, T.vol * 0.5, T.wave, now + i * beat * 2, beat * 2.8);
+    });
+
+    // Melody — 8 random scale notes
+    for (let i = 0; i < 8; i++) {
+      const freq = notes[Math.floor(Math.random() * notes.length)];
+      const mel  = (Math.random() < 0.5) ? freq * 2 : freq;
+      const when = now + i * beat + Math.random() * beat * 0.3;
+      const dur  = beat * (Math.random() < 0.4 ? 1.2 : 0.5);
+      makeNote(mel, T.vol * 0.4, T.wave, when, dur);
+    }
+
+    // Accent plucks on beat 1 and 5
+    [0, beat * 4].forEach(offset => {
+      makeNote(notes[2] * 2, T.vol * 0.35, 'sine', now + offset, beat * 0.2);
+    });
+
+    // Schedule next loop just before this one ends
+    const loopLen = beat * 8;
+    musicLoopTimer = setTimeout(playLoop, (loopLen - 0.5) * 1000);
+  }
+
+  // Small delay so audioCtx is fully ready, then start immediately
+  setTimeout(playLoop, 100);
+}
+
+function toggleMusic() {
+  initAudio();
+  if (!audioCtx) return;
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().then(() => toggleMusic());
+    return;
+  }
+  musicOn = !musicOn;
+  const btn = document.getElementById('music-btn');
+  if (musicOn) {
+    btn.textContent = '🔊 Music';
+    btn.style.color = 'rgba(255,255,255,0.85)';
+    btn.style.borderColor = 'rgba(126,200,80,0.4)';
+    playWorldMusic(currentWorld().music);
+  } else {
+    btn.textContent = '🔇 Music';
+    btn.style.color = 'rgba(255,255,255,0.5)';
+    btn.style.borderColor = '';
+    stopAllMusic();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// PARTICLE SYSTEM
+// ═══════════════════════════════════════════════════════
+const pCanvas = document.getElementById('particle-canvas');
+const pCtx = pCanvas.getContext('2d');
+let particles = [], particleAnim = null;
+function resizeParticleCanvas() { pCanvas.width = window.innerWidth; pCanvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeParticleCanvas); resizeParticleCanvas();
+
+function spawnPortalParticles(colors) {
+  particles = [];
+  const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+  for (let i = 0; i < 140; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1.5 + Math.random() * 5;
+    particles.push({
+      x:cx, y:cy, vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed,
+      color:colors[Math.floor(Math.random()*colors.length)],
+      life:1.0, decay:0.008+Math.random()*0.012,
+      size:Math.max(2, 3+Math.random()*7), star:Math.random()<0.4,
+    });
+  }
+  for (let i = 0; i < 60; i++) {
+    const a = (i/60)*Math.PI*8, r = 10+i*1.5;
+    particles.push({
+      x:cx+Math.cos(a)*r*0.3, y:cy+Math.sin(a)*r*0.3,
+      vx:Math.cos(a+Math.PI/2)*3, vy:Math.sin(a+Math.PI/2)*3,
+      color:colors[i%colors.length], life:1.0, decay:0.011,
+      size:Math.max(2, 4+Math.random()*4), star:false,
+    });
+  }
+}
+
+function drawStarShape(cx,cy,r,ctx2,color,alpha) {
+  if (r <= 0) return;
+  ctx2.save(); ctx2.globalAlpha = Math.max(0, alpha); ctx2.fillStyle = color;
+  ctx2.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const a = (i*4*Math.PI/5)-Math.PI/2, ai = a+Math.PI/5;
+    if (i===0) ctx2.moveTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
+    else ctx2.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
+    ctx2.lineTo(cx+Math.cos(ai)*r*0.4, cy+Math.sin(ai)*r*0.4);
+  }
+  ctx2.closePath(); ctx2.fill(); ctx2.restore();
+}
+
+function animateParticles() {
+  pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+  particles = particles.filter(p => p.life > 0.01);
+  particles.forEach(p => {
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.04; p.vx*=0.98; p.life-=p.decay;
+    const r = Math.max(0, p.size * p.life);
+    if (p.star) {
+      drawStarShape(p.x, p.y, r, pCtx, p.color, p.life);
+    } else if (r > 0) {
+      pCtx.save(); pCtx.globalAlpha = Math.max(0, p.life);
+      pCtx.fillStyle = p.color;
+      pCtx.beginPath(); pCtx.arc(p.x, p.y, r, 0, Math.PI*2); pCtx.fill();
+      pCtx.restore();
+    }
+  });
+  if (particles.length > 0) particleAnim = requestAnimationFrame(animateParticles);
+  else { pCanvas.classList.remove('active'); particleAnim = null; }
+}
+
+function triggerParticles(colors) {
+  if (particleAnim) cancelAnimationFrame(particleAnim);
+  pCanvas.classList.add('active');
+  spawnPortalParticles(colors);
+  particleAnim = requestAnimationFrame(animateParticles);
+}
+
+// ═══════════════════════════════════════════════════════
+// CANVAS & INFINITE TILE ENGINE
+// ═══════════════════════════════════════════════════════
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const TILE = 40;
+// Viewport dimensions in tiles (computed on resize)
+let VW = 20, VH = 16;
+// Camera position in world-tile coordinates (top-left tile visible)
+let camX = 0, camY = 0;
+// Player is always in world coordinates, no map bounds
+let player = { wx:0, wy:0, px:0, py:0, moving:false, facing:'down' };
+let keys = {};
+let respawnTimer = 0;
+const RESPAWN_INTERVAL = 3500;
+
+// Infinite world: tiles are generated procedurally from (wx,wy) coords
+// We cache generated tiles in a Map keyed by "wx,wy"
+let tileCache = new Map();
+let items = [];  // active items in world coords
+
+function resizeCanvas() {
+  const area = document.getElementById('canvas-area');
+  canvas.width  = area.clientWidth;
+  canvas.height = area.clientHeight;
+  VW = Math.ceil(canvas.width  / TILE) + 2;
+  VH = Math.ceil(canvas.height / TILE) + 2;
+}
+window.addEventListener('resize', resizeCanvas);
+
+function seededRng(seed) {
+  let s = seed|0;
+  return () => { s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/0xffffffff; };
+}
+
+// Hash two integers to a stable seed
+function hashCoord(x, y, worldSeed) {
+  return ((x * 1619) ^ (y * 31337) ^ worldSeed) >>> 0;
+}
+
+function getTile(wx, wy, worldDim) {
+  const key = `${wx},${wy}`;
+  if (tileCache.has(key)) return tileCache.get(key);
+  const world = getWorld(worldDim);
+  const rng = seededRng(hashCoord(wx, wy, worldDim * 99991));
+  let type = 'ground';
+  const r = rng();
+  const distO = Math.max(Math.abs(wx), Math.abs(wy));
+  const obRate = world.obstacleRate || 0.06;
+  if (distO > 2 && r < obRate) type = 'obstacle';
+  else if (r < obRate + 0.1) type = 'deco';
+  const tile = { type, decoId: Math.floor(rng()*3) };
+  tileCache.set(key, tile);
+  return tile;
+}
+
+function isTileBlocked(wx, wy) {
+  const t = getTile(wx, wy, state.worldIndex);
+  return t.type === 'obstacle';
+}
+
+// Generate visible items when entering a new area
+const seenChunks = new Set();
+const CHUNK = 8; // chunk size in tiles
+
+function ensureChunk(cx, cy) {
+  const key=`${cx},${cy},${state.worldIndex}`;
+  if (seenChunks.has(key)) return;
+  seenChunks.add(key);
+  const world=currentWorld();
+  const res=world.resources;
+  const rng = seededRng(hashCoord(cx, cy, state.worldIndex * 77777 + 1));
+  const count = 3 + Math.floor(rng() * 4);
+  for (let i=0; i<count; i++) {
+    const lx = cx*CHUNK + Math.floor(rng()*CHUNK);
+    const ly = cy*CHUNK + Math.floor(rng()*CHUNK);
+    if (isTileBlocked(lx, ly)) continue;
+    if (items.find(it=>it.wx===lx&&it.wy===ly)) continue;
+    const resource = res[Math.floor(rng()*res.length)];
+    items.push({ wx:lx, wy:ly, resource,
+      scale:0.7+rng()*0.3, collected:false,
+      bobOffset:rng()*Math.PI*2, spawning:false });
+  }
+}
+
+function generateWorld(world) {
+  // Reset for new world
+  tileCache.clear();
+  seenChunks.clear();
+  items = [];
+  player.wx = 0; player.wy = 0;
+  player.px = 0; player.py = 0;
+  player.moving = false;
+  refreshResLookup();
+  centerCamera();
+  updateGoalBanner();
+}
+function centerCamera() {
+  camX = player.wx - Math.floor(VW/2);
+  camY = player.wy - Math.floor(VH/2);
+}
+
+function ensureVisibleChunks() {
+  const cx0 = Math.floor(camX / CHUNK) - 1;
+  const cy0 = Math.floor(camY / CHUNK) - 1;
+  const cx1 = Math.floor((camX + VW) / CHUNK) + 1;
+  const cy1 = Math.floor((camY + VH) / CHUNK) + 1;
+  for (let cy=cy0; cy<=cy1; cy++)
+    for (let cx=cx0; cx<=cx1; cx++)
+      ensureChunk(cx, cy);
+}
+
+// ═══════════════════════════════════════════════════════
+// INPUT
+// ═══════════════════════════════════════════════════════
+let lastCraftTime = 0; // timestamp of last craft action — blocks Space portal briefly
+
+document.addEventListener('keydown', e => {
+  keys[e.key]=true;
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+  const craftCooldownOver = (Date.now() - lastCraftTime) > 800;
+  if (e.key===' '&&state.portalKeyCount>0&&!state.transitioning&&craftCooldownOver) usePortalKey(null);
+});
+document.addEventListener('keyup', e => { keys[e.key]=false; });
+
+function tryMove(dx,dy) {
+  const nx=player.wx+dx, ny=player.wy+dy;
+  if (isTileBlocked(nx,ny)) return;
+  player.wx=nx; player.wy=ny;
+  if (dx>0) player.facing='right';
+  else if (dx<0) player.facing='left';
+  else if (dy>0) player.facing='down';
+  else player.facing='up';
+  collectItemsAt(nx,ny);
+  // Scroll camera to keep player centred
+  centerCamera();
+}
+
+function collectItemsAt(wx,wy) {
+  items.forEach(item=>{
+    if (!item.collected&&item.wx===wx&&item.wy===wy) {
+      item.collected=true;
+      const id=item.resource.id;
+      state.inventory[id]=(state.inventory[id]||0)+1;
+      showToast(`${item.resource.icon} ${item.resource.name} collected!`);
+      renderInventory(); renderCrafting(); scheduleSave();
+    }
+  });
+}
+
+let lastTime=0, moveDelay=0;
+function update(ts) {
+  const dt=ts-lastTime; lastTime=ts;
+  moveDelay-=dt;
+  respawnTimer+=dt;
+
+  // Prune far-away collected items to keep memory lean
+  if (respawnTimer > RESPAWN_INTERVAL) {
+    respawnTimer=0;
+    items = items.filter(it => {
+      if (!it.collected) return true;
+      // Remove collected items that are far from camera
+      return Math.abs(it.wx - player.wx) < VW*2 && Math.abs(it.wy - player.wy) < VH*2;
+    });
+  }
+
+  let moved=false;
+  if (moveDelay<=0&&!state.transitioning) {
+    let dx=0,dy=0;
+    if (keys['ArrowUp']||keys['w']||keys['W']) dy=-1;
+    else if (keys['ArrowDown']||keys['s']||keys['S']) dy=1;
+    else if (keys['ArrowLeft']||keys['a']||keys['A']) dx=-1;
+    else if (keys['ArrowRight']||keys['d']||keys['D']) dx=1;
+    if (dx||dy) { tryMove(dx,dy); moveDelay=140; moved=true; }
+  }
+  player.moving=moved;
+
+  // Smooth pixel position (player in screen space = always near center)
+  const screenPX = (player.wx - camX) * TILE;
+  const screenPY = (player.wy - camY) * TILE;
+  player.px += (screenPX - player.px)*0.3;
+  player.py += (screenPY - player.py)*0.3;
+
+  // Ensure chunks around viewport are generated
+  ensureVisibleChunks();
+
+  draw(ts);
+  requestAnimationFrame(update);
+}
+
+// ═══════════════════════════════════════════════════════
+// GOAL SYSTEM
+// ═══════════════════════════════════════════════════════
+function isGoalComplete(worldId) {
+  return !!state.goalsComplete[worldId];
+}
+
+// Returns the goal object for the current world (base or procedural)
+function getCurrentGoal() {
+  const world = currentWorld();
+  if (world.proceduralGoal) return world.proceduralGoal;
+  return WORLD_GOALS[world.id] || null;
+}
+
+function updateGoalBanner() {
+  const world = currentWorld();
+  const goal = getCurrentGoal();
+  const banner = document.getElementById('goal-banner');
+  const effect = getWorldEffect(); // respects lightOn toggle
+  if (!goal || !effect) {
+    banner.classList.remove('visible');
+  } else {
+    const icon = effect === 'light' ? '🕯️' : '🌫️';
+    banner.textContent = `${icon} ${goal.desc}`;
+    banner.classList.add('visible');
+  }
+  renderInventory();
+}
+
+function getWorldEffect() {
+  const world = currentWorld();
+  const goal = getCurrentGoal();
+  if (!goal) return null;
+  const wid = world.id;
+  // lightOn explicitly set takes priority
+  if (state.lightOn[wid] === true)  return null;        // toggled ON → effect cleared
+  if (state.lightOn[wid] === false) return goal.unlocks; // toggled OFF → effect active
+  // Not toggled — fall back to goalsComplete (set when crafted in-world)
+  if (isGoalComplete(wid)) return null;
+  return goal.unlocks; // default: effect active
+}
+
+// ═══════════════════════════════════════════════════════
+// DRAW
+// ═══════════════════════════════════════════════════════
+function draw(ts) {
+  const world = currentWorld();
+  const now = ts/1000;
+  const effect = getWorldEffect();
+
+  ctx.fillStyle = world.groundColor;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // Draw tiles from camera viewport
+  for (let ty=0; ty<VH; ty++) {
+    for (let tx=0; tx<VW; tx++) {
+      const wx=camX+tx, wy=camY+ty;
+      const tile=getTile(wx,wy,state.worldIndex);
+      const sx=tx*TILE, sy=ty*TILE;
+      if (tile.type==='obstacle') {
+        ctx.fillStyle=world.obstacleColor||world.palette[5]; ctx.fillRect(sx,sy,TILE,TILE);
+        ctx.fillStyle=world.palette[4]; ctx.fillRect(sx+3,sy+3,TILE-6,TILE-6);
+        ctx.font='20px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(world.obstacleIcon||'🌳',sx+TILE/2,sy+TILE/2);
+      } else if (tile.type==='deco') {
+        ctx.fillStyle=world.palette[tile.decoId%world.palette.length];
+        ctx.fillRect(sx+5,sy+5,TILE-10,TILE-10);
+      }
+      ctx.strokeStyle='rgba(0,0,0,0.06)'; ctx.lineWidth=0.5;
+      ctx.strokeRect(sx,sy,TILE,TILE);
+    }
+  }
+
+  // Draw items
+  items.forEach(item=>{
+    if (item.collected) return;
+    const sx=(item.wx-camX)*TILE+TILE/2;
+    const sy=(item.wy-camY)*TILE+TILE/2+Math.sin(now*1.5+item.bobOffset)*3;
+    if (sx<-TILE||sx>canvas.width+TILE||sy<-TILE||sy>canvas.height+TILE) return;
+    ctx.save(); ctx.translate(sx,sy); ctx.scale(item.scale,item.scale);
+    ctx.shadowColor=item.resource.color; ctx.shadowBlur=14;
+    ctx.font='22px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(item.resource.icon,0,0);
+    ctx.shadowBlur=0; ctx.restore();
+  });
+
+  drawPlayer(now,world);
+
+  if (effect==='light') {
+    const ppx=player.px+TILE/2, ppy=player.py+TILE/2;
+    const radius=95+Math.sin(now*1.2)*4;
+    const darkOverlay=ctx.createRadialGradient(ppx,ppy,radius*0.4,ppx,ppy,radius*1.6);
+    darkOverlay.addColorStop(0,'rgba(0,0,0,0)');
+    darkOverlay.addColorStop(0.5,'rgba(0,0,0,0.55)');
+    darkOverlay.addColorStop(1,'rgba(0,0,0,0.97)');
+    ctx.fillStyle=darkOverlay; ctx.fillRect(0,0,canvas.width,canvas.height);
+  } else if (effect==='fog') {
+    ctx.fillStyle='rgba(200,220,255,0.52)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    for (let i=0;i<5;i++) {
+      const fx=(Math.sin(now*0.3+i*1.3)*0.4+0.5)*canvas.width;
+      const fy=(Math.cos(now*0.2+i*0.9)*0.3+0.5)*canvas.height;
+      const fg=ctx.createRadialGradient(fx,fy,10,fx,fy,180);
+      fg.addColorStop(0,'rgba(230,240,255,0.38)'); fg.addColorStop(1,'rgba(230,240,255,0)');
+      ctx.fillStyle=fg; ctx.fillRect(0,0,canvas.width,canvas.height);
+    }
+  }
+
+  drawMinimap(world);
+}
+
+function drawPlayer(now,world) {
+  const ppx=player.px+TILE/2, ppy=player.py+TILE/2;
+  const bounce=Math.abs(Math.sin(now*6))*2.5;
+  const ringPulse=0.5+0.5*Math.sin(now*2);
+
+  // Glow ring
+  const grad=ctx.createRadialGradient(ppx,ppy+10,2,ppx,ppy+10,22);
+  grad.addColorStop(0,world.accent+'cc'); grad.addColorStop(1,world.accent+'00');
+  ctx.beginPath(); ctx.ellipse(ppx,ppy+10,22,10,0,0,Math.PI*2);
+  ctx.fillStyle=grad; ctx.globalAlpha=0.55+ringPulse*0.45; ctx.fill(); ctx.globalAlpha=1;
+
+  // Drop shadow
+  ctx.fillStyle='rgba(0,0,0,0.3)';
+  ctx.beginPath(); ctx.ellipse(ppx,ppy+12-bounce,11,4,0,0,Math.PI*2); ctx.fill();
+
+  // Character
+  ctx.save(); ctx.translate(ppx,ppy-bounce);
+  drawCharShape(ctx, player.facing, player.moving, now, world.accent);
+  ctx.restore();
+
+  // ── Equipped keepsake — floats above character ──────
+  const equipped = state.equippedIdx !== null ? state.crafted[state.equippedIdx] : null;
+  if (equipped) {
+    const fy = ppy - bounce - 46 + Math.sin(now * 2.2) * 3;
+    const itemPulse = 0.8 + 0.2 * Math.sin(now * 3);
+    // Soft halo behind item
+    const haloGrad = ctx.createRadialGradient(ppx, fy, 2, ppx, fy, 18);
+    haloGrad.addColorStop(0, 'rgba(167,139,250,0.35)');
+    haloGrad.addColorStop(1, 'rgba(167,139,250,0)');
+    ctx.beginPath(); ctx.arc(ppx, fy, 18, 0, Math.PI*2);
+    ctx.fillStyle = haloGrad; ctx.fill();
+    // Item icon
+    ctx.save();
+    ctx.globalAlpha = itemPulse;
+    ctx.shadowColor = '#a78bfa'; ctx.shadowBlur = 12;
+    ctx.font = '18px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(equipped.icon, ppx, fy);
+    ctx.shadowBlur = 0; ctx.restore();
+  }
+
+  // Portal key indicator
+  const keyOffsetY = equipped ? -62 : -30;
+  if (state.portalKeyCount>0) {
+    const kp=0.7+0.3*Math.sin(now*3);
+    ctx.save(); ctx.globalAlpha=kp; ctx.shadowColor=world.accent; ctx.shadowBlur=10;
+    ctx.font='16px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('🗝️',ppx,ppy-bounce+keyOffsetY); ctx.shadowBlur=0; ctx.restore();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// MINIMAP
+// ═══════════════════════════════════════════════════════
+const mmCanvas=document.getElementById('minimapCanvas');
+const mmCtx=mmCanvas.getContext('2d');
+const MM_W=100,MM_H=80;
+const MM_RANGE_X=14, MM_RANGE_Y=11; // tiles shown each side
+
+function drawMinimap(world) {
+  mmCtx.clearRect(0,0,MM_W,MM_H);
+  mmCtx.fillStyle='rgba(0,0,0,0.6)'; mmCtx.fillRect(0,0,MM_W,MM_H);
+  const tw=MM_W/(MM_RANGE_X*2), th=MM_H/(MM_RANGE_Y*2);
+  const effect=getWorldEffect();
+
+  for (let dy=-MM_RANGE_Y; dy<=MM_RANGE_Y; dy++) {
+    for (let dx=-MM_RANGE_X; dx<=MM_RANGE_X; dx++) {
+      if (effect==='light' && (Math.abs(dx)>4||Math.abs(dy)>4)) {
+        mmCtx.fillStyle='rgba(0,0,0,0.92)';
+      } else {
+        const wx=player.wx+dx, wy=player.wy+dy;
+        const tile=getTile(wx,wy,state.worldIndex);
+        if (tile.type==='obstacle') mmCtx.fillStyle=world.palette[5];
+        else if (tile.type==='deco') mmCtx.fillStyle=world.palette[2]+'aa';
+        else mmCtx.fillStyle=world.groundColor+'cc';
+      }
+      const sx=(dx+MM_RANGE_X)*tw, sy=(dy+MM_RANGE_Y)*th;
+      mmCtx.fillRect(sx,sy,tw,th);
+    }
+  }
+
+  // Items as dots
+  if (effect!=='light') {
+    items.forEach(item=>{
+      if (item.collected) return;
+      const dx=item.wx-player.wx, dy=item.wy-player.wy;
+      if (Math.abs(dx)>MM_RANGE_X||Math.abs(dy)>MM_RANGE_Y) return;
+      mmCtx.fillStyle=item.resource.color;
+      mmCtx.beginPath();
+      mmCtx.arc((dx+MM_RANGE_X)*tw+tw/2,(dy+MM_RANGE_Y)*th+th/2,1.6,0,Math.PI*2);
+      mmCtx.fill();
+    });
+  }
+
+  // Player dot (always centre)
+  const cx=MM_W/2, cy=MM_H/2;
+  mmCtx.fillStyle='#fff'; mmCtx.beginPath(); mmCtx.arc(cx,cy,3.5,0,Math.PI*2); mmCtx.fill();
+  mmCtx.fillStyle=world.accent; mmCtx.beginPath(); mmCtx.arc(cx,cy,2,0,Math.PI*2); mmCtx.fill();
+}
+
+// ═══════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════
+function updateHeader() {
+  const world=currentWorld();
+  const badge=document.getElementById('world-badge');
+  badge.textContent=world.badge; badge.style.background=world.badgeBg; badge.style.color=world.badgeText;
+  document.getElementById('world-name').textContent=world.name;
+  document.getElementById('dimension-counter').textContent=`Dimension ${state.worldIndex}`;
+  const bar=document.getElementById('portal-progress');
+  bar.style.width=Math.min(state.portalKeyCount*100,100)+'%'; bar.style.background=world.accent;
+  document.getElementById('portal-text').textContent=state.portalKeyCount>0?'Key ready! (Space)':'Craft key';
+}
+
+const resLookup={};
+WORLDS.forEach(w=>w.resources.forEach(r=>{resLookup[r.id]=r;}));
+// Extend resLookup with current world resources (handles procedural worlds)
+function refreshResLookup() {
+  const w = currentWorld();
+  w.resources.forEach(r=>{ resLookup[r.id]=r; });
+}
+
+function renderInventory() {
+  const world=currentWorld();
+  const goal=getCurrentGoal();
+  const effect=getWorldEffect(); // single source of truth: null=clear, 'light'/'fog'=active
+  const el=document.getElementById('tab-inventory');
+  const inv=state.inventory;
+  const allItems=Object.entries(inv).filter(([,v])=>v>0);
+  let html='<div class="section-label">Collected</div>';
+
+  // ── Goal card ────────────────────────────────────────
+  if (goal) {
+    if (effect) {
+      // Effect is active — show progress or challenge card
+      const ingredients = goal.ingredients ||
+        RECIPES.find(r=>r.id===goal.craftId)?.ingredients || {};
+      let progress=0, total=0;
+      Object.entries(ingredients).forEach(([id,amt])=>{ total+=amt; progress+=Math.min(state.inventory[id]||0,amt); });
+      const pct=total>0?Math.round(progress/total*100):0;
+      const typeIcon  = goal.unlocks==='light' ? '🕯️' : '🌫️';
+      const typeTitle = goal.unlocks==='light' ? 'Darkness Challenge' : 'Fog Challenge';
+      const typeNote  = goal.permanent ? 'Returns each visit' : 'Clears permanently';
+      const cardBg    = goal.permanent ? 'rgba(255,200,50,0.07)' : 'rgba(100,180,255,0.07)';
+      const cardBdr   = goal.permanent ? 'rgba(255,200,50,0.2)'  : 'rgba(100,180,255,0.2)';
+      const titleClr  = goal.permanent ? 'rgba(255,210,60,0.95)' : 'rgba(130,195,255,0.95)';
+      html+=`<div class="goal-card" style="background:${cardBg};border-color:${cardBdr}">
+        <div class="goal-title" style="color:${titleClr}">${typeIcon} ${typeTitle} <span style="font-weight:400;font-size:9px;opacity:0.65">· ${typeNote}</span></div>
+        <div class="goal-desc">${goal.desc}</div>
+        <div class="goal-progress"><div class="goal-progress-fill" style="width:${pct}%;background:${world.accent}"></div></div>
+      </div>`;
+    } else {
+      // Effect is cleared
+      const completedMsg = goal.permanent
+        ? `${goal.craftName} is active! Darkness returns when you leave.`
+        : `${goal.craftName} used — cleared!`;
+      const completedIcon = goal.permanent ? '🕯️' : '✅';
+      html+=`<div class="goal-card" style="border-color:rgba(100,220,150,0.3);background:rgba(100,220,150,0.05)">
+        <div class="goal-title" style="color:rgba(100,220,150,0.9)">${completedIcon} Active!</div>
+        <div class="goal-desc">${completedMsg}</div>
+      </div>`;
+    }
+  }
+
+  if (allItems.length===0) {
+    html+='<div style="font-size:11px;color:rgba(255,255,255,0.28);text-align:center;padding:12px 0 6px;">Walk over glowing items!</div>';
+  } else {
+    html+='<div class="inv-grid">';
+    allItems.forEach(([id,count])=>{
+      const res=resLookup[id]||world.resources.find(r=>r.id===id);
+      if(!res) return;
+      html+=`<div class="inv-slot"><div class="item-icon">${res.icon}</div><div class="item-count">×${count}</div><div class="item-name">${res.name}</div></div>`;
+    });
+    html+='</div>';
+  }
+  // ── ITEMS / KEEPSAKES ────────────────────────────────
+  if (state.crafted.length > 0) {
+    const currentEffect = getWorldEffect();
+    const goal = getCurrentGoal();
+
+    // Hint banner: matching tool available for this world
+    const matchingTool = currentEffect
+      ? state.crafted.find(c => c.effect === currentEffect && c.forWorldId === world.id)
+      : null;
+    if (matchingTool && !isGoalComplete(world.id) && state.lightOn[world.id] !== false) {
+      const hintIcon = currentEffect === 'light' ? '🕯️' : '🌫️';
+      const hintVerb = currentEffect === 'light' ? 'light the way' : 'clear the fog';
+      html+=`<div style="background:rgba(255,220,80,0.10);border:1px solid rgba(255,220,80,0.25);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:11px;color:rgba(255,220,80,0.9);">${hintIcon} You have a <b>${matchingTool.name}</b> — toggle it on below!</div>`;
+    }
+
+    html += '<div class="section-label" style="margin-top:8px;">Keepsakes &amp; Tools</div>';
+
+    state.crafted.forEach((c, idx) => {
+      const isEffect   = !!c.effect;
+      const rightWorld = c.forWorldId === world.id;
+      const wrongWorld = c.forWorldId && c.forWorldId !== world.id;
+      const isEquipped = state.equippedIdx === idx;
+
+      // ── EFFECT ITEM (lantern / lens) ─────────────────
+      if (isEffect) {
+        // Light is ON when getWorldEffect() returns null (effect cleared)
+        // Light is OFF when getWorldEffect() returns 'light' or 'fog' (effect active)
+        const currentlyOn = rightWorld && !getWorldEffect();
+
+        const cardBorder = wrongWorld
+          ? 'rgba(255,80,80,0.25)'
+          : currentlyOn ? 'rgba(100,220,150,0.4)' : 'rgba(255,200,80,0.25)';
+        const cardBg = wrongWorld
+          ? 'rgba(255,80,80,0.06)'
+          : currentlyOn ? 'rgba(100,220,150,0.07)' : 'rgba(255,200,80,0.05)';
+
+        // Icon with state overlay
+        let iconHtml;
+        if (wrongWorld) {
+          iconHtml = `<div style="position:relative;width:34px;height:34px;flex-shrink:0">
+            <span style="font-size:24px;line-height:34px;display:block;text-align:center;opacity:0.35">${c.icon}</span>
+            <svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 34 34">
+              <line x1="4" y1="4" x2="30" y2="30" stroke="#ff4444" stroke-width="3" stroke-linecap="round"/>
+              <line x1="30" y1="4" x2="4" y2="30" stroke="#ff4444" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </div>`;
+        } else if (currentlyOn) {
+          iconHtml = `<div style="width:34px;height:34px;flex-shrink:0;filter:drop-shadow(0 0 8px ${c.effect==='light'?'#fbbf24':'#7dd3fc'})">
+            <span style="font-size:24px;line-height:34px;display:block;text-align:center">${c.icon}</span>
+          </div>`;
+        } else {
+          iconHtml = `<div style="width:34px;height:34px;flex-shrink:0">
+            <span style="font-size:24px;line-height:34px;display:block;text-align:center;opacity:0.6">${c.icon}</span>
+          </div>`;
+        }
+
+        // Status label
+        const statusText = wrongWorld
+          ? `<span style="font-size:9px;color:rgba(255,100,100,0.85)">✕ Only works in ${c.forWorldName||'another world'}</span>`
+          : currentlyOn
+            ? `<span style="font-size:9px;color:rgba(100,220,150,0.9)">● ON — ${c.effect==='light'?'Illuminated':'Fog cleared'}</span>`
+            : `<span style="font-size:9px;color:rgba(255,200,80,0.75)">○ OFF — ${c.effect==='light'?'Darkness active':'Fog active'}</span>`;
+
+        const worldTag = c.forWorldName
+          ? `<span style="font-size:9px;color:rgba(255,255,255,0.28)">${c.forWorldName}</span>`
+          : '';
+
+        // Toggle button — ONLY for right world items
+        let btnHtml = '';
+        if (rightWorld) {
+          btnHtml = currentlyOn
+            ? `<button onclick="toggleLight(${idx})" style="padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(100,220,150,0.15);border:1px solid rgba(100,220,150,0.4);color:rgb(100,220,150);cursor:pointer;white-space:nowrap;">Turn Off</button>`
+            : `<button onclick="toggleLight(${idx})" style="padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(255,200,80,0.15);border:1px solid rgba(255,200,80,0.4);color:rgb(255,200,80);cursor:pointer;white-space:nowrap;">Turn On</button>`;
+        }
+        // wrongWorld items: no button at all, just the red slash and label
+
+        html += `<div style="display:flex;align-items:center;gap:9px;background:${cardBg};border:1px solid ${cardBorder};border-radius:10px;padding:9px 10px;margin-bottom:6px;">
+          ${iconHtml}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,${wrongWorld?'0.4':'0.85'})">${c.name}</div>
+            <div style="display:flex;gap:6px;margin-top:2px;flex-wrap:wrap">${statusText} ${worldTag}</div>
+          </div>
+          ${btnHtml}
+        </div>`;
+
+      // ── KEEPSAKE ITEM (equippable) ───────────────────
+      } else {
+        const cardBorder = isEquipped ? 'rgba(167,139,250,0.5)' : 'rgba(255,255,255,0.1)';
+        const cardBg     = isEquipped ? 'rgba(167,139,250,0.1)' : 'rgba(255,255,255,0.04)';
+        const equippedTag = isEquipped
+          ? `<span style="font-size:9px;color:rgba(167,139,250,0.9)">● Equipped</span>`
+          : `<span style="font-size:9px;color:rgba(255,255,255,0.28)">Not equipped</span>`;
+        const equipBtn = isEquipped
+          ? `<button onclick="equipItem(${idx})" style="padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.4);color:rgb(167,139,250);cursor:pointer;white-space:nowrap;">Unequip</button>`
+          : `<button onclick="equipItem(${idx})" style="padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.7);cursor:pointer;white-space:nowrap;">Equip</button>`;
+
+        html += `<div style="display:flex;align-items:center;gap:9px;background:${cardBg};border:1px solid ${cardBorder};border-radius:10px;padding:9px 10px;margin-bottom:6px;${isEquipped?'box-shadow:0 0 12px rgba(167,139,250,0.15)':''}">
+          <span style="font-size:24px;line-height:1;${isEquipped?'filter:drop-shadow(0 0 6px rgba(167,139,250,0.8))':''}">${c.icon}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.85)">${c.name}</div>
+            <div style="margin-top:2px">${equippedTag}</div>
+          </div>
+          ${equipBtn}
+        </div>`;
+      }
+    });
+  }
+  if (state.portalKeyCount>0) {
+    html+=`<div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.18);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:11px;color:rgba(255,215,0,0.8);">🗝️ Portal Key ×${state.portalKeyCount} — press Space!</div>`;
+  }
+  el.innerHTML=html;
+}
+
+function renderCrafting() {
+  const world=currentWorld();
+  const el=document.getElementById('tab-crafting');
+  const worldRecipes=getWorldRecipes(state.worldIndex);
+  let html=`<div class="section-label">Recipes in ${world.name}</div>`;
+  // Build a local res lookup that includes this world's resources
+  const localResLookup = {...resLookup};
+  world.resources.forEach(r=>{localResLookup[r.id]=r;});
+  worldRecipes.forEach(recipe=>{
+    const canCraft=Object.entries(recipe.ingredients).every(([id,amt])=>(state.inventory[id]||0)>=amt);
+    const isPortal=recipe.category==='portal';
+    html+=`<div class="craft-recipe${canCraft?' craftable':''}">`;
+    html+=`<div class="recipe-header"><span class="recipe-icon">${recipe.icon}</span><span class="recipe-name">${recipe.name}</span></div>`;
+    html+=`<div class="recipe-desc">${recipe.desc}</div>`;
+    html+=`<div class="recipe-ingredients">`;
+    Object.entries(recipe.ingredients).forEach(([id,amt])=>{
+      const have=(state.inventory[id]||0)>=amt; const res=localResLookup[id];
+      html+=`<span class="ingredient-tag${have?' have':''}">${res?res.icon:''} ${res?res.name:id} ×${amt}</span>`;
+    });
+    html+=`</div>`;
+    if (canCraft) html+=`<button class="craft-btn can" onclick="craftRecipe('${recipe.id}')">${isPortal?'🌀 Craft Portal Key':'✨ Craft'}</button>`;
+    else html+=`<button class="craft-btn cannot" disabled>Need more resources</button>`;
+    html+='</div>';
+  });
+  el.innerHTML=html;
+}
+
+function renderCodex() {
+  const el=document.getElementById('tab-codex');
+  const visited = [...state.worldsVisited].sort((a,b)=>a-b);
+  let html='<div class="section-label">Dimensions discovered</div>';
+  visited.forEach(dim=>{
+    const w=getWorld(dim);
+    html+=`<div class="codex-world">`;
+    html+=`<div class="codex-world-header"><div class="codex-dot" style="background:${w.accent}"></div><div class="codex-world-name">${w.name} <span style="opacity:0.4;font-size:10px">#${dim}</span></div></div>`;
+    html+=`<div class="codex-world-desc">${w.desc}</div>`;
+    html+=`<div class="codex-resources">${w.resources.map(r=>`<span class="codex-res-tag">${r.icon} ${r.name}</span>`).join('')}</div>`;
+    html+='</div>';
+  });
+  if (visited.length < state.worldIndex) {
+    html+='<div class="codex-world" style="opacity:0.35"><div class="codex-world-header"><div class="codex-dot" style="background:#555"></div><div class="codex-world-name">??? Unknown Dimension</div></div><div class="codex-world-desc">Craft a portal key to explore beyond.</div></div>';
+  }
+  el.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════
+// CRAFTING
+// ═══════════════════════════════════════════════════════
+function craftRecipe(recipeId) {
+  // Find recipe in base RECIPES or in current world's procedural recipes
+  let recipe = RECIPES.find(r=>r.id===recipeId);
+  if (!recipe) {
+    const worldRecipes = getWorldRecipes(state.worldIndex);
+    recipe = worldRecipes.find(r=>r.id===recipeId);
+  }
+  if (!recipe) return;
+  const canCraft=Object.entries(recipe.ingredients).every(([id,amt])=>(state.inventory[id]||0)>=amt);
+  if (!canCraft) return;
+  lastCraftTime = Date.now(); // block Space portal briefly after crafting
+  Object.entries(recipe.ingredients).forEach(([id,amt])=>{state.inventory[id]-=amt;});
+  if (recipe.category==='portal') {
+    state.portalKeyCount++;
+    showToast('🗝️ Portal Key crafted! Press Space to jump!');
+  } else {
+    // Store crafted item with its effect type so it can be used from the bag
+    const goalForRecipe = getCurrentGoal();
+    const isGoalItem = goalForRecipe && goalForRecipe.craftId === recipeId;
+    state.crafted.push({
+      id:          recipe.result?.id   || recipeId,
+      name:        recipe.result?.name || recipe.name,
+      icon:        recipe.result?.icon || recipe.icon,
+      effect:      isGoalItem ? goalForRecipe.unlocks : null,
+      forWorldId:  currentWorld().id,        // ALL items locked to the world they were crafted in
+      forWorldName:currentWorld().name,
+    });
+    showToast(`${recipe.result?.icon||recipe.icon} ${recipe.result?.name||recipe.name} crafted!`);
+    // Check if this completes a goal (base or procedural world)
+    const world=currentWorld();
+    const goal=getCurrentGoal();
+    if (goal&&goal.craftId===recipeId&&!isGoalComplete(world.id)) {
+      state.goalsComplete[world.id]=true;
+      const msg = goal.unlocks==='light'
+        ? '🕯️ Light restored! Take it with you — use it from your bag next time.'
+        : (goal.permanent ? '🌫️ Fog cleared! Use it from your bag on future visits.' : '✅ Fog cleared for good!');
+      setTimeout(()=>showToast(msg),600);
+      updateGoalBanner();
+    }
+  }
+  renderInventory(); renderCrafting(); updateHeader(); scheduleSave();
+}
+
+// ═══════════════════════════════════════════════════════
+// ITEM INTERACTIONS
+// ═══════════════════════════════════════════════════════
+
+// Toggle the light/fog effect on or off for this visit
+function toggleLight(idx) {
+  const item = state.crafted[idx];
+  if (!item || !item.effect) return;
+  const world = currentWorld();
+  const goal = getCurrentGoal();
+  if (!goal) return;
+  if (item.forWorldId !== world.id) return;
+  if (item.effect !== goal.unlocks) return;
+
+  const wid = world.id;
+  // effect is null = light is ON (cleared). effect = 'light'/'fog' = light is OFF (active)
+  const effectActive = !!getWorldEffect();
+
+  if (!effectActive) {
+    // Currently ON — turn OFF (restore darkness/fog)
+    state.lightOn[wid] = false;
+    delete state.goalsComplete[wid];
+    const icon = item.effect === 'light' ? '🌑' : '🌫️';
+    showToast(`${icon} ${item.name} turned off.`);
+  } else {
+    // Currently OFF — turn ON (clear effect)
+    state.lightOn[wid] = true;
+    state.goalsComplete[wid] = true;
+    const icon = item.effect === 'light' ? '🕯️' : '✨';
+    showToast(`${icon} ${item.name} turned on!`);
+  }
+  updateGoalBanner();
+  renderInventory();
+  scheduleSave();
+}
+
+// Legacy alias used by old code paths (crafting in-world)
+function useItemFromBag(idx) { toggleLight(idx); }
+
+// Equip / unequip a keepsake to display it on the character
+function equipItem(idx) {
+  if (state.equippedIdx === idx) {
+    state.equippedIdx = null;
+    showToast('Item unequipped.');
+  } else {
+    state.equippedIdx = idx;
+    const item = state.crafted[idx];
+    showToast(`${item.icon} ${item.name} equipped!`);
+  }
+  renderInventory();
+  scheduleSave();
+}
+
+// ═══════════════════════════════════════════════════════
+// PORTAL + TRAVEL
+// ═══════════════════════════════════════════════════════
+function doTransition(nextDim, label) {
+  state.transitioning=true;
+  const overlay=document.getElementById('portal-overlay');
+  const swirl=document.getElementById('portal-swirl');
+  const nextWorld=getWorld(nextDim);
+  swirl.style.background=`radial-gradient(circle, ${nextWorld.accent}44, ${nextWorld.badgeBg}88)`;
+  document.getElementById('portal-msg').textContent=label;
+  document.getElementById('portal-dest').textContent=nextWorld.name;
+  overlay.classList.add('active');
+  overlay.style.background='rgba(0,0,0,0)';
+  triggerParticles(nextWorld.particleColors);
+  setTimeout(()=>{ overlay.style.background='rgba(0,0,0,0.82)'; },50);
+  setTimeout(()=>{
+    const isFirstVisit = !state.worldsVisited.includes(nextDim);
+    state.worldIndex=nextDim;
+    state.dimensionCount++;
+    if (isFirstVisit) state.worldsVisited.push(nextDim);
+    // Determine goal reset behaviour
+    const nextGoal = nextWorld.proceduralGoal || WORLD_GOALS[nextWorld.id] || null;
+    if (nextGoal) {
+      if (nextGoal.permanent) {
+        delete state.goalsComplete[nextWorld.id];
+        delete state.lightOn[nextWorld.id]; // reset toggle each visit
+      } else if (isFirstVisit) {
+        delete state.goalsComplete[nextWorld.id];
+        delete state.lightOn[nextWorld.id];
+      }
+    }
+    generateWorld(nextWorld);
+    updateHeader(); renderInventory(); renderCrafting(); renderCodex(); scheduleSave();
+    if (musicOn) playWorldMusic(nextWorld.music);
+    overlay.style.background='rgba(0,0,0,0)';
+    setTimeout(()=>{overlay.classList.remove('active'); state.transitioning=false;},500);
+  },1500);
+}
+
+function usePortalKey(targetDim) {
+  state.portalKeyCount--;
+  const nextDim = targetDim !== null ? targetDim : state.worldIndex + 1;
+  doTransition(nextDim, 'Entering new dimension...');
+}
+
+// ═══════════════════════════════════════════════════════
+// WORLD SWITCHER
+// ═══════════════════════════════════════════════════════
+function openWorldSwitcher() { renderWorldSwitcher(); document.getElementById('world-switcher').classList.add('active'); }
+function closeWorldSwitcher() { document.getElementById('world-switcher').classList.remove('active'); }
+document.getElementById('world-switcher').addEventListener('click',e=>{ if(e.target===document.getElementById('world-switcher')) closeWorldSwitcher(); });
+
+function renderWorldSwitcher() {
+  const list=document.getElementById('ws-list');
+  const visited=[...state.worldsVisited].sort((a,b)=>a-b);
+  let html='';
+  visited.forEach(dim=>{
+    const w=getWorld(dim);
+    const isCurrent=dim===state.worldIndex;
+    let cls='ws-world'+(isCurrent?' current':'');
+    const onclick=!isCurrent?`travelToWorld(${dim})`:'';
+    html+=`<div class="${cls}" ${onclick?`onclick="${onclick}"`:''}>`;
+    html+=`<div class="ws-dot" style="background:${w.badgeBg}22;border:1.5px solid ${w.badgeBg}77">${w.resources[0].icon}</div>`;
+    html+=`<div class="ws-info"><div class="ws-world-name">${w.name} <span style="opacity:0.4;font-size:10px">#${dim}</span></div><div class="ws-world-desc">${w.desc}</div></div>`;
+    if (isCurrent) html+=`<span class="ws-badge current-badge">Here</span>`;
+    else html+=`<span class="ws-badge visit-badge">Travel →</span>`;
+    html+='</div>';
+  });
+  // Tease next undiscovered dimension
+  const maxVisited=Math.max(...visited);
+  const nextDim=maxVisited+1;
+  html+=`<div class="ws-world locked"><div class="ws-dot" style="background:#33335522;border:1.5px solid #55555577">🌀</div><div class="ws-info"><div class="ws-world-name">??? Dimension ${nextDim}</div><div class="ws-world-desc">Craft a portal key to discover what lies beyond.</div></div><span class="ws-badge lock-badge">🔒 Locked</span></div>`;
+  list.innerHTML=html;
+}
+
+function travelToWorld(dim) {
+  if (state.transitioning||dim===state.worldIndex) return;
+  closeWorldSwitcher();
+  doTransition(dim,'Returning to...');
+}
+
+// ═══════════════════════════════════════════════════════
+// TABS + TOAST
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('.panel-tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.panel-tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel-content').forEach(c=>c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+let toastTimer;
+function showToast(msg) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2600);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+resizeCanvas();
+loadGame();
+loadCharacter();
+generateWorld(currentWorld());
+centerCamera();
+updateHeader(); renderInventory(); renderCrafting(); renderCodex();
+requestAnimationFrame(update);
+</script>
+</body>
+</html>
