@@ -2979,12 +2979,12 @@ function renderCrafting() {
   const el=document.getElementById('tab-crafting');
   const worldRecipes=getWorldRecipes(state.worldIndex);
   let html=`<div class="section-label">Recipes in ${world.name}</div>`;
-  // Build a local res lookup that includes this world's resources
   const localResLookup = {...resLookup};
   world.resources.forEach(r=>{localResLookup[r.id]=r;});
   worldRecipes.forEach(recipe=>{
     const canCraft=Object.entries(recipe.ingredients).every(([id,amt])=>(state.inventory[id]||0)>=amt);
     const isPortal=recipe.category==='portal';
+    // Use data-id attribute instead of inline onclick to avoid emoji/quote corruption
     html+=`<div class="craft-recipe${canCraft?' craftable':''}">`;
     html+=`<div class="recipe-header"><span class="recipe-icon">${recipe.icon}</span><span class="recipe-name">${recipe.name}</span></div>`;
     html+=`<div class="recipe-desc">${recipe.desc}</div>`;
@@ -2994,11 +2994,15 @@ function renderCrafting() {
       html+=`<span class="ingredient-tag${have?' have':''}">${res?res.icon:''} ${res?res.name:id} ×${amt}</span>`;
     });
     html+=`</div>`;
-    if (canCraft) html+=`<button class="craft-btn can" onclick="craftRecipe('${recipe.id}')">${isPortal?'🌀 Craft Portal Key':'✨ Craft'}</button>`;
+    if (canCraft) html+=`<button class="craft-btn can" data-recipe-id="${recipe.id}">${isPortal?'🌀 Craft Portal Key':'✨ Craft'}</button>`;
     else html+=`<button class="craft-btn cannot" disabled>Need more resources</button>`;
     html+='</div>';
   });
   el.innerHTML=html;
+  // Attach click handlers after setting innerHTML (safe — no emoji in JS strings)
+  el.querySelectorAll('button[data-recipe-id]').forEach(btn=>{
+    btn.addEventListener('click', ()=>craftRecipe(btn.dataset.recipeId));
+  });
 }
 
 function renderCodex() {
@@ -3072,16 +3076,12 @@ function craftRecipe(recipeId) {
 // Toggle the light/fog effect on or off for this visit
 function toggleLight(idx) {
   const item = state.crafted[idx];
-  console.log('[toggleLight] idx:', idx, 'item:', item);
-  console.log('[toggleLight] world.id:', currentWorld().id, 'forWorldId:', item?.forWorldId);
-  console.log('[toggleLight] goal:', getCurrentGoal());
-  console.log('[toggleLight] getWorldEffect():', getWorldEffect());
-  if (!item || !item.effect) { console.log('[toggleLight] BAIL: no effect'); return; }
+  if (!item || !item.effect) return;
   const world = currentWorld();
   const goal = getCurrentGoal();
-  if (!goal) { console.log('[toggleLight] BAIL: no goal'); return; }
-  if (item.forWorldId !== world.id) { console.log('[toggleLight] BAIL: wrong world', item.forWorldId, '!==', world.id); return; }
-  if (item.effect !== goal.unlocks) { console.log('[toggleLight] BAIL: wrong effect', item.effect, '!==', goal.unlocks); return; }
+  if (!goal) return;
+  if (item.forWorldId !== world.id) return;
+  if (item.effect !== goal.unlocks) return;
 
   const wid = world.id;
   // effect is null = light is ON (cleared). effect = 'light'/'fog' = light is OFF (active)
@@ -3174,13 +3174,16 @@ function renderLegendary() {
     if (alreadyCrafted) {
       html += `<button class="leg-craft-btn cannot" disabled>✅ Already crafted — in your bag</button>`;
     } else if (canCraft) {
-      html += `<button class="leg-craft-btn can" onclick="craftLegendary('${recipe.id}')">✨ Craft ${recipe.name}</button>`;
+      html += `<button class="leg-craft-btn can" data-leg-id="${recipe.id}">✨ Craft ${recipe.name}</button>`;
     } else {
       html += `<button class="leg-craft-btn cannot" disabled>Collect more ingredients (${pct}%)</button>`;
     }
     html += '</div>';
   });
   el.innerHTML = html;
+  el.querySelectorAll('button[data-leg-id]').forEach(btn=>{
+    btn.addEventListener('click', ()=>craftLegendary(btn.dataset.legId));
+  });
 }
 
 function craftLegendary(recipeId) {
